@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+model Form {
+  id        String     @id @default(uuid())
+  title     String
+  questions Question[]
+  tokens    InviteToken[]
+  responses Response[]
+  createdAt DateTime   @default(now())
+}
+
+model Question {
+  id      String   @id @default(uuid())
+  text    String
+  form    Form     @relation(fields: [formId], references: [id])
+  formId  String
+  options Option[]
+  answers Answer[]
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  label      String
+  value      Int?
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  answers    Answer[]
+}
+
+model InviteToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  email     String
+  form      Form     @relation(fields: [formId], references: [id])
+  formId    String
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Response {
+  id        String   @id @default(uuid())
+  email     String
+  form      Form     @relation(fields: [formId], references: [id])
+  formId    String
+  answers   Answer[]
+  createdAt DateTime @default(now())
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  response   Response @relation(fields: [responseId], references: [id])
+  responseId String
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  option     Option   @relation(fields: [optionId], references: [id])
+  optionId   String
+}
