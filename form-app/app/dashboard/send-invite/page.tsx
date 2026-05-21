@@ -1,22 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type Form = {
+  id: string;
+  title: string;
+};
 
 export default function SendInvitePage() {
-  const [formId, setFormId] = useState("");
+  const [forms, setForms] = useState<Form[]>([]);
+  const [selectedForm, setSelectedForm] = useState<Form | null>(null);
+
   const [emails, setEmails] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  //  Send invite (single / multiple emails)
+  // ✅ Fetch forms
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const res = await fetch("/api/admin/forms");
+        const data = await res.json();
+        setForms(data.forms || data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchForms();
+  }, []);
+
+  // ✅ Send invite (email)
   const handleSendInvite = async () => {
-    if (!formId || !emails.trim()) {
-      setMessage("Please enter Form ID and email(s)");
+    if (!selectedForm || !emails.trim()) {
+      setMessage("Please select a form and enter email(s)");
       return;
     }
 
     const emailList = emails.split(",").map((e) => e.trim());
+
     setLoading(true);
     setMessage("");
 
@@ -28,8 +51,8 @@ export default function SendInvitePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email, //  single email per request
-            formId,
+            email,
+            formId: selectedForm.id,
           }),
         });
 
@@ -38,25 +61,31 @@ export default function SendInvitePage() {
         }
       }
 
-      setMessage(" Invites sent successfully");
+      setMessage("✅ Invites sent successfully");
       setEmails("");
     } catch (error) {
       console.error(error);
-      setMessage(" Error sending invites");
+      setMessage("❌ Error sending invites");
     } finally {
       setLoading(false);
     }
   };
 
-  //  Bulk Excel Upload
+  // ✅ Bulk upload
   const handleBulkUpload = async () => {
-    if (!formId || !file) {
-      setMessage("Please provide Form ID and Excel file");
+    if (!selectedForm || !file) {
+      setMessage("Please select a form and upload file");
+      return;
+    }
+
+    // ✅ Optional validation
+    if (!file.name.endsWith(".xlsx")) {
+      setMessage("⚠️ Only Excel (.xlsx) files allowed");
       return;
     }
 
     const formData = new FormData();
-    formData.append("formId", formId);
+    formData.append("formId", selectedForm.id);
     formData.append("file", file);
 
     setLoading(true);
@@ -65,21 +94,16 @@ export default function SendInvitePage() {
     try {
       const res = await fetch("/api/admin/send-invite-bulk", {
         method: "POST",
-        body: formData, //  multipart/form-data
+        body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error("Bulk upload failed");
-      }
+      if (!res.ok) throw new Error("Bulk failed");
 
-      const data = await res.json();
-      console.log(data);
-
-      setMessage(" Bulk invites sent successfully");
+      setMessage("✅ Bulk invites sent successfully");
       setFile(null);
     } catch (error) {
       console.error(error);
-      setMessage(" Error sending bulk invites");
+      setMessage("❌ Error in bulk upload");
     } finally {
       setLoading(false);
     }
@@ -87,27 +111,35 @@ export default function SendInvitePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-
       <h1 className="text-2xl font-bold mb-6">Send Invite</h1>
 
       <div className="grid gap-6 max-w-2xl mx-auto">
 
-        {/* FORM ID INPUT */}
+        {/* ✅ FORM SELECT */}
         <div className="bg-white p-5 rounded-xl shadow">
-          <label className="block mb-2 font-medium">Form ID</label>
-          <input
+          <label className="block mb-2 font-medium">
+            Select Form
+          </label>
+
+          <select
             className="w-full border p-2 rounded"
-            value={formId}
-            onChange={(e) => setFormId(e.target.value)}
-            placeholder="Enter Form ID"
-          />
+            onChange={(e) => {
+              const form = forms.find(f => f.id === e.target.value);
+              setSelectedForm(form || null);
+            }}
+          >
+            <option value="">-- Select Form --</option>
+            {forms.map((form) => (
+              <option key={form.id} value={form.id}>
+                {form.title}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/*  EMAIL INPUT SECTION */}
+        {/* ✅ EMAIL SECTION */}
         <div className="bg-white p-5 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-3">
-            Send via Email
-          </h2>
+          <h2 className="font-semibold mb-3">Send via Email</h2>
 
           <textarea
             className="w-full border p-2 rounded mb-4"
@@ -126,12 +158,13 @@ export default function SendInvitePage() {
           </button>
         </div>
 
-        {/* BULK UPLOAD SECTION */}
+        {/* ✅ BULK UPLOAD SECTION */}
         <div className="bg-white p-5 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-3">
+          <h2 className="font-semibold mb-3">
             Bulk Upload (Excel)
           </h2>
 
+          {/* File Input */}
           <input
             type="file"
             accept=".xlsx"
@@ -139,16 +172,31 @@ export default function SendInvitePage() {
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
 
+          {/* ✅ Selected File Display */}
+          {file && (
+            <div className="flex justify-between items-center bg-gray-100 p-2 rounded mb-4">
+              <span className="text-sm truncate">{file.name}</span>
+
+              <button
+                onClick={() => setFile(null)}
+                className="text-red-500 text-sm"
+              >
+                Remove ❌
+              </button>
+            </div>
+          )}
+
+          {/* Upload button */}
           <button
             onClick={handleBulkUpload}
-            disabled={loading}
+            disabled={loading || !file}
             className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
           >
             {loading ? "Uploading..." : "Upload & Send"}
           </button>
         </div>
 
-        {/*  MESSAGE */}
+        {/* ✅ MESSAGE */}
         {message && (
           <div className="text-center text-sm">
             {message}
@@ -159,4 +207,3 @@ export default function SendInvitePage() {
     </div>
   );
 }
-``

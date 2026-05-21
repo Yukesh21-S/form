@@ -40,7 +40,10 @@ export default function DashboardPage() {
 
         {/* Send Invite */}
         <div
-          onClick={() => router.push("/dashboard/send-invite")}
+          onClick={() => {
+  console.log("Navigating to send invite");
+  router.push("/dashboard/send-invite");
+}}
           className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
         >
           <h2 className="text-xl font-semibold mb-2">Send Invite</h2>
@@ -48,6 +51,7 @@ export default function DashboardPage() {
             Send form links to users via email or Excel upload.
           </p>
         </div>
+        
 
       </div>
 

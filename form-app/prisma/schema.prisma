@@ -2,66 +2,74 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
   provider = "postgresql"
 }
 
-
-
 model Form {
-  id        String     @id @default(uuid())
+  id        String        @id @default(uuid())
   title     String
-  questions Question[]
+  createdAt DateTime      @default(now())
   tokens    InviteToken[]
+  questions Question[]
   responses Response[]
-  createdAt DateTime   @default(now())
 }
 
 model Question {
-  id      String   @id @default(uuid())
-  text    String
-  form    Form     @relation(fields: [formId], references: [id])
-  formId  String
-  options Option[]
-  answers Answer[]
+  id        String       @id @default(uuid())
+  text      String
+  formId    String
+  ratingMax Int?
+  ratingMin Int?
+  type      QuestionType @default(MULTIPLE_CHOICE)
+  answers   Answer[]
+  options   Option[]
+  form      Form         @relation(fields: [formId], references: [id])
 }
 
 model Option {
   id         String   @id @default(uuid())
   label      String
   value      Int?
-  question   Question @relation(fields: [questionId], references: [id])
   questionId String
   answers    Answer[]
+  question   Question @relation(fields: [questionId], references: [id])
 }
 
 model InviteToken {
   id        String   @id @default(uuid())
   token     String   @unique
   email     String
-  form      Form     @relation(fields: [formId], references: [id])
   formId    String
   isUsed    Boolean  @default(false)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  form      Form     @relation(fields: [formId], references: [id])
 }
 
 model Response {
   id        String   @id @default(uuid())
   email     String
-  form      Form     @relation(fields: [formId], references: [id])
   formId    String
-  answers   Answer[]
   createdAt DateTime @default(now())
+  answers   Answer[]
+  form      Form     @relation(fields: [formId], references: [id])
 }
 
 model Answer {
-  id         String   @id @default(uuid())
-  response   Response @relation(fields: [responseId], references: [id])
-  responseId String
-  question   Question @relation(fields: [questionId], references: [id])
-  questionId String
-  option     Option   @relation(fields: [optionId], references: [id])
-  optionId   String
+  id          String   @id @default(uuid())
+  responseId  String
+  questionId  String
+  optionId    String?
+  ratingValue Int?
+  textValue   String?
+  option      Option?  @relation(fields: [optionId], references: [id])
+  question    Question @relation(fields: [questionId], references: [id])
+  response    Response @relation(fields: [responseId], references: [id])
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  RATING
+  TEXT
 }

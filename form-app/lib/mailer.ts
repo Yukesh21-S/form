@@ -30,8 +30,8 @@ async function getTransporter() {
 export async function sendInviteEmail(email: string, token: string) {
   const transport = await getTransporter();
 
-  const inviteUrl = `${APP_URL}/api/form/${token}`;
-
+  // const inviteUrl = `${APP_URL}/api/form/${token}`;
+     const inviteUrl = `${APP_URL}/user/dashboard/form/${token}`;
   const info = await transport.sendMail({
     from: '"Feedback App" <no-reply@test.com>',
     to: email,

@@ -140,13 +140,13 @@ export default function CreateFormPage() {
 
       </div>
 
-       <div
-          onClick={() => router.push("/dashboard/")}
-          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
-        >
-          <h2 className="text-xl font-semibold mb-2">Back to Dashboard</h2>
-         
-        </div>
+     <button
+  onClick={() => router.push("/dashboard")}
+  className="mt-6 w-full bg-gray-300 py-2 rounded hover:bg-gray-400"
+>
+  Back to Dashboard
+</button>
+
     </div>
     
   );
