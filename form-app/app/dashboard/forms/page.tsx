@@ -145,7 +145,7 @@ export default function FormsPage() {
               // FORM ID
               ////////////////////////////////////////////////////// */}
 
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-700 mt-1 font-medium">
                 Form ID: {form.id}
               </p>
 
@@ -153,7 +153,7 @@ export default function FormsPage() {
               // CREATED DATE
               ////////////////////////////////////////////////////// */}
 
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-600">
                 Created{" "}
                 {new Date(
                   form.createdAt

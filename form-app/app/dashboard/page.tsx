@@ -19,10 +19,10 @@ export default function DashboardPage() {
         {/* Create Form */}
         <div
           onClick={() => router.push("/dashboard/create-form")}
-          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
+          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition border border-gray-200"
         >
-          <h2 className="text-xl font-semibold mb-2">Create Form</h2>
-          <p className="text-gray-500">
+          <h2 className="text-xl font-bold mb-2 text-gray-900">Create Form</h2>
+          <p className="text-gray-700">
             Create a new feedback form with multiple questions.
           </p>
         </div>
@@ -30,10 +30,10 @@ export default function DashboardPage() {
         {/* View Forms */}
         <div
           onClick={() => router.push("/dashboard/forms")}
-          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
+          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition border border-gray-200"
         >
-          <h2 className="text-xl font-semibold mb-2">View Forms</h2>
-          <p className="text-gray-500">
+          <h2 className="text-xl font-bold mb-2 text-gray-900">View Forms</h2>
+          <p className="text-gray-700">
             See all created forms and track responses.
           </p>
         </div>
@@ -41,13 +41,13 @@ export default function DashboardPage() {
         {/* Send Invite */}
         <div
           onClick={() => {
-  console.log("Navigating to send invite");
-  router.push("/dashboard/send-invite");
-}}
-          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
+            console.log("Navigating to send invite");
+            router.push("/dashboard/send-invite");
+          }}
+          className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition border border-gray-200"
         >
-          <h2 className="text-xl font-semibold mb-2">Send Invite</h2>
-          <p className="text-gray-500">
+          <h2 className="text-xl font-bold mb-2 text-gray-900">Send Invite</h2>
+          <p className="text-gray-700">
             Send form links to users via email or Excel upload.
           </p>
         </div>

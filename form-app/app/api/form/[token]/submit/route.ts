@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getValidInviteToken } from "@/lib/feedback";
 
 const submitSchema = z.object({
+  relationshipType: z.string().optional(),
   answers: z
     .array(
       z.object({
@@ -61,8 +62,8 @@ export async function POST(
     );
   }
 
-  const answers =
-    parseResult.data.answers;
+  const { answers, relationshipType } =
+    parseResult.data;
 
   const invite =
     await getValidInviteToken(token);
@@ -73,6 +74,17 @@ export async function POST(
       404
     );
   }
+
+  //////////////////////////////////////////////////////
+  // AUTO-DETECT / ENFORCE SELF
+  // Even if user selected something else, if they are 
+  // the participant, they are SELF.
+  //////////////////////////////////////////////////////
+
+  const finalRelationshipType =
+    invite.email.toLowerCase() === invite.participant.email.toLowerCase()
+      ? "SELF"
+      : (relationshipType || invite.relationshipType || "OTHER");
 
   //////////////////////////////////////////////////////
   // VALIDATE QUESTIONS
@@ -151,11 +163,17 @@ export async function POST(
         formId: invite.formId,
 
         //////////////////////////////////////////////////////
-        // IMPORTANT
+        // PARTICIPANT
         //////////////////////////////////////////////////////
 
         participantId:
           invite.participantId,
+
+        //////////////////////////////////////////////////////
+        // RELATIONSHIP TYPE — from payload or invite
+        //////////////////////////////////////////////////////
+
+        relationshipType: finalRelationshipType,
 
         //////////////////////////////////////////////////////
 

@@ -36,6 +36,9 @@ model Participant {
   department    String?
   designation   String?
 
+  inviteTokens  InviteToken[]
+  responses     Response[]
+
   createdAt     DateTime  @default(now())
 
 }
@@ -48,6 +51,8 @@ model Question {
   id          String       @id @default(uuid())
 
   text        String
+
+  category    String?
 
   formId      String
   form        Form         @relation(fields: [formId], references: [id])
@@ -79,62 +84,74 @@ model Option {
 // INVITE TOKEN
 //////////////////////////////////////////////////////
 model InviteToken {
-  id             String   @id @default(uuid())
+  id               String   @id @default(uuid())
 
-  token          String   @unique
+  token            String   @unique
 
-  email          String
+  email            String
 
-  formId         String
-  form           Form     @relation(fields: [formId], references: [id])
+  formId           String
+  form             Form     @relation(fields: [formId], references: [id])
 
-  //////////////////////////////////////////////////////
-  // ADD THIS
-  //////////////////////////////////////////////////////
-
-  participantId  String?
+  participantId    String?
+  participant      Participant? @relation(fields: [participantId], references: [id])
 
   //////////////////////////////////////////////////////
+  // RELATIONSHIP TYPE
+  // SELF | MANAGER | PEER | DIRECT_REPORT | OTHER
+  //////////////////////////////////////////////////////
 
-  isUsed         Boolean  @default(false)
+  relationshipType String?
 
-  expiresAt      DateTime
+  //////////////////////////////////////////////////////
 
-  createdAt      DateTime @default(now())
+  isUsed           Boolean  @default(false)
+
+  expiresAt        DateTime
+
+  createdAt        DateTime @default(now())
 }
 //////////////////////////////////////////////////////
 // RESPONSE
 //////////////////////////////////////////////////////
 
 model Response {
-  id            String   @id @default(uuid())
+  id               String   @id @default(uuid())
 
-  email         String
+  email            String
 
   //////////////////////////////////////////////////////
   // FORM
   //////////////////////////////////////////////////////
 
-  formId        String
-  form          Form     @relation(fields: [formId], references: [id])
+  formId           String
+  form             Form     @relation(fields: [formId], references: [id])
 
   //////////////////////////////////////////////////////
   // PARTICIPANT
   //////////////////////////////////////////////////////
 
-  participantId String?
+  participantId    String?
+  participant      Participant? @relation(fields: [participantId], references: [id])
+
+  //////////////////////////////////////////////////////
+  // RELATIONSHIP TYPE
+  // SELF | MANAGER | PEER | DIRECT_REPORT | OTHER
+  //////////////////////////////////////////////////////
+
+  relationshipType String?
 
   //////////////////////////////////////////////////////
   // CREATED DATE
   //////////////////////////////////////////////////////
 
-  createdAt     DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   //////////////////////////////////////////////////////
   // ANSWERS
   //////////////////////////////////////////////////////
 
-  answers       Answer[]
+  answers          Answer[]
 }
 
 //////////////////////////////////////////////////////

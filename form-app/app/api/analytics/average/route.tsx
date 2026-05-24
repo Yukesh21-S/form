@@ -8,11 +8,9 @@ export async function GET(req: Request) {
   // QUERY PARAMS
   //////////////////////////////////////////////////////
 
-  const formId =
-    url.searchParams.get("formId");
+  const formId = url.searchParams.get("formId");
 
-  const participantId =
-    url.searchParams.get("participantId");
+  const participantId = url.searchParams.get("participantId");
 
   if (!formId) {
     return NextResponse.json(
@@ -25,32 +23,31 @@ export async function GET(req: Request) {
   // FETCH FORM
   //////////////////////////////////////////////////////
 
-  const form =
-    await prisma.form.findUnique({
-      where: { id: formId },
+  const form = await prisma.form.findUnique({
+    where: { id: formId },
 
-      include: {
-        questions: {
-          include: {
-            options: true,
-          },
-        },
-
-        responses: {
-          include: {
-            answers: {
-              include: {
-                option: true,
-              },
-            },
-          },
-
-          orderBy: {
-            createdAt: "desc",
-          },
+    include: {
+      questions: {
+        include: {
+          options: true,
         },
       },
-    });
+
+      responses: {
+        include: {
+          answers: {
+            include: {
+              option: true,
+            },
+          },
+        },
+
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
 
   if (!form) {
     return NextResponse.json(
@@ -60,140 +57,157 @@ export async function GET(req: Request) {
   }
 
   //////////////////////////////////////////////////////
-  // FILTER RESPONSES
+  // FILTER BY PARTICIPANT
   //////////////////////////////////////////////////////
 
-  const filteredResponses =
-    participantId
-      ? form.responses.filter(
-          (response: any) =>
-            response.participantId ===
-            participantId
-        )
-      : form.responses;
+  const filteredResponses = participantId
+    ? form.responses.filter(
+        (r: any) => r.participantId === participantId
+      )
+    : form.responses;
 
   //////////////////////////////////////////////////////
-  // ANALYTICS
+  // ALL RESPONSES (enterprise benchmark)
   //////////////////////////////////////////////////////
 
-  const results =
-    form.questions.map(
-      (question: any) => {
-        let total = 0;
+  const allResponses = form.responses;
 
-        let validResponses = 0;
+  //////////////////////////////////////////////////////
+  // SELF vs OTHERS split using relationshipType
+  //////////////////////////////////////////////////////
 
-        const distribution: Record<
-          string,
-          number
-        > = {
-          Rarely: 0,
-          Sometimes: 0,
-          Often: 0,
-          Always: 0,
-          "Insufficient Exposure": 0,
-        };
+  const selfResponses = filteredResponses.filter(
+    (r: any) => r.relationshipType === "SELF"
+  );
 
-        //////////////////////////////////////////////////////
-        // LOOP RESPONSES
-        //////////////////////////////////////////////////////
+  const othersResponses = filteredResponses.filter(
+    (r: any) => r.relationshipType !== "SELF"
+  );
 
-        filteredResponses.forEach(
-          (response: any) => {
-            response.answers.forEach(
-              (answer: any) => {
-                if (
-                  answer.questionId ===
-                  question.id
-                ) {
-                  const option =
-                    answer.option;
+  //////////////////////////////////////////////////////
+  // HELPER: compute analytics per question set
+  //////////////////////////////////////////////////////
 
-                  if (!option) return;
+  function computeResults(
+    questions: any[],
+    responses: any[]
+  ) {
+    return questions.map((question: any) => {
+      let total = 0;
+      let validResponses = 0;
 
-                  //////////////////////////////////////////////////////
-                  // DISTRIBUTION
-                  //////////////////////////////////////////////////////
+      const distribution: Record<string, number> = {
+        Rarely: 0,
+        Sometimes: 0,
+        Often: 0,
+        Always: 0,
+        "Insufficient Exposure": 0,
+      };
 
-                  distribution[
-                    option.label
-                  ]++;
+      responses.forEach((response: any) => {
+        response.answers.forEach((answer: any) => {
+          if (answer.questionId === question.id) {
+            const option = answer.option;
 
-                  //////////////////////////////////////////////////////
-                  // SCORE
-                  //////////////////////////////////////////////////////
+            if (!option) return;
 
-                  if (
-                    option.value !== null
-                  ) {
-                    total +=
-                      option.value;
+            distribution[option.label]++;
 
-                    validResponses++;
-                  }
-                }
-              }
-            );
+            if (option.value !== null) {
+              total += option.value;
+              validResponses++;
+            }
           }
-        );
+        });
+      });
 
-        //////////////////////////////////////////////////////
-        // AVERAGE
-        //////////////////////////////////////////////////////
+      const rawAverage =
+        validResponses > 0 ? total / validResponses : 0;
 
-        const rawAverage =
-          validResponses > 0
-            ? total /
-              validResponses
-            : 0;
+      const roundedScore = Math.round(rawAverage);
 
-        const roundedScore =
-          Math.round(rawAverage);
+      let band = "";
 
-        //////////////////////////////////////////////////////
-        // BAND
-        //////////////////////////////////////////////////////
-
-        let band = "";
-
-        if (roundedScore > 85) {
-          band =
-            "Consistently observed";
-        } else if (
-          roundedScore >= 70
-        ) {
-          band =
-            "Moderately observed";
-        } else {
-          band =
-            "Inconsistently observed";
-        }
-
-        //////////////////////////////////////////////////////
-        // RETURN
-        //////////////////////////////////////////////////////
-
-        return {
-          questionId: question.id,
-
-          question: question.text,
-
-          distribution,
-
-          totalScore: total,
-
-          validResponses,
-
-          rawAverage: Number(
-            rawAverage.toFixed(2)
-          ),
-
-          roundedScore,
-
-          band,
-        };
+      if (roundedScore > 85) {
+        band = "Consistently observed";
+      } else if (roundedScore >= 70) {
+        band = "Moderately observed";
+      } else {
+        band = "Inconsistently observed";
       }
-    );
+
+      return {
+        questionId: question.id,
+
+        question: question.text,
+
+        category: question.category ?? null,
+
+        distribution,
+
+        totalScore: total,
+
+        validResponses,
+
+        rawAverage: Number(rawAverage.toFixed(2)),
+
+        roundedScore,
+
+        band,
+      };
+    });
+  }
+
+  //////////////////////////////////////////////////////
+  // RESULTS
+  //////////////////////////////////////////////////////
+
+  const results = computeResults(form.questions, filteredResponses);
+
+  //////////////////////////////////////////////////////
+  // ENTERPRISE BENCHMARK
+  //////////////////////////////////////////////////////
+
+  const enterpriseResults = computeResults(form.questions, allResponses);
+
+  //////////////////////////////////////////////////////
+  // SELF vs OTHERS results
+  //////////////////////////////////////////////////////
+
+  const selfResults = computeResults(form.questions, selfResponses);
+
+  const othersResults = computeResults(form.questions, othersResponses);
+
+  //////////////////////////////////////////////////////
+  // RESPONSE BREAKDOWN BY TYPE
+  //////////////////////////////////////////////////////
+
+  const responsesByType: Record<string, number> = {};
+
+  filteredResponses.forEach((r: any) => {
+    const type = r.relationshipType ?? "UNKNOWN";
+    responsesByType[type] = (responsesByType[type] ?? 0) + 1;
+  });
+
+  //////////////////////////////////////////////////////
+  // COMPETENCY GROUPING
+  //////////////////////////////////////////////////////
+
+  const leadingSelf = results.filter(
+    (q) => q.category === "Leading Self"
+  );
+
+  const leadingOthers = results.filter(
+    (q) => q.category === "Leading Others"
+  );
+
+  const enterpriseLeadingSelf = enterpriseResults.filter(
+    (q) => q.category === "Leading Self"
+  );
+
+  const enterpriseLeadingOthers = enterpriseResults.filter(
+    (q) => q.category === "Leading Others"
+  );
 
   //////////////////////////////////////////////////////
   // RESPONSE
@@ -204,9 +218,43 @@ export async function GET(req: Request) {
 
     participantId,
 
-    totalResponses:
-      filteredResponses.length,
+    totalResponses: filteredResponses.length,
+
+    responsesByType,
 
     results,
+
+    //////////////////////////////////////////////////////
+    // COMPETENCY GROUPS
+    //////////////////////////////////////////////////////
+
+    competencyGroups: {
+      leadingSelf,
+      leadingOthers,
+    },
+
+    //////////////////////////////////////////////////////
+    // ENTERPRISE BENCHMARK
+    //////////////////////////////////////////////////////
+
+    enterpriseBenchmark: {
+      results: enterpriseResults,
+
+      competencyGroups: {
+        leadingSelf: enterpriseLeadingSelf,
+        leadingOthers: enterpriseLeadingOthers,
+      },
+    },
+
+    //////////////////////////////////////////////////////
+    // SELF vs OTHERS (uses relationshipType field)
+    //////////////////////////////////////////////////////
+
+    selfVsOthers: {
+      self: selfResults,
+      others: othersResults,
+      selfResponseCount: selfResponses.length,
+      othersResponseCount: othersResponses.length,
+    },
   });
 }

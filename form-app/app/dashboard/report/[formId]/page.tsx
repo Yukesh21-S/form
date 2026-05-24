@@ -40,18 +40,18 @@ export default function ReportPage() {
     <div className="p-6 bg-gray-100 min-h-screen">
 
       {/* Title */}
-      <h1 className="text-2xl font-bold mb-2">
+      <h1 className="text-3xl font-bold mb-4 text-black">
         Overall Results
       </h1>
-      <p className="text-gray-600 mb-6">
+      <p className="text-gray-900 mb-6 font-semibold">
         Survey: {data.title}
       </p>
 
       {/* Summary */}
-      <div className="flex gap-6 mb-8">
-        <p>Invited: {data.totalInvited}</p>
-        <p>Responses: {data.totalResponses}</p>
-        <p>Completion: {data.completionRate}%</p>
+      <div className="flex gap-8 mb-8 text-black font-bold">
+        <p className="bg-white p-3 rounded shadow-sm border border-gray-200">Invited: {data.totalInvited}</p>
+        <p className="bg-white p-3 rounded shadow-sm border border-gray-200">Responses: {data.totalResponses}</p>
+        <p className="bg-white p-3 rounded shadow-sm border border-gray-200">Completion: {data.completionRate}%</p>
       </div>
 
       {/* OVERALL SCORE CARD */}
@@ -59,38 +59,38 @@ export default function ReportPage() {
         <div
           className={`${getColor(
             data.overallAverage
-          )} text-white px-10 py-6 rounded-lg text-center`}
+          )} text-white px-12 py-8 rounded-2xl text-center shadow-lg transform hover:scale-105 transition-transform`}
         >
-          <p className="text-4xl font-bold">
+          <p className="text-5xl font-extrabold">
             {Math.round(data.overallAverage)}%
           </p>
-          <p className="text-sm mt-2">
+          <p className="text-sm mt-2 font-bold uppercase tracking-wider">
             {getLabel(data.overallAverage)}
           </p>
         </div>
       </div>
 
       {/* QUESTIONS (PER BEHAVIOR) */}
-      <div className="space-y-4 mb-10">
+      <div className="space-y-6 mb-12">
         {data.questions.map((q: any) => (
-          <div key={q.questionId}>
-            <p className="text-sm mb-1">
+          <div key={q.questionId} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <p className="text-lg mb-3 font-bold text-black">
               {q.questionText}
             </p>
 
-            <div className="flex items-center gap-3">
-              <div className="w-full bg-gray-200 h-4 rounded">
+            <div className="flex items-center gap-6">
+              <div className="w-full bg-gray-100 h-5 rounded-full overflow-hidden border border-gray-200">
                 <div
                   className={`${getColor(
                     q.averageScore
-                  )} h-4 rounded`}
+                  )} h-full transition-all duration-700`}
                   style={{
                     width: `${q.averageScore}%`,
                   }}
                 />
               </div>
 
-              <span>{q.averageScore}%</span>
+              <span className="font-extrabold text-xl text-black min-w-[60px] text-right">{q.averageScore}%</span>
             </div>
           </div>
         ))}

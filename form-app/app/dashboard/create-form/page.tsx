@@ -1,30 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"
-export default function CreateFormPage() {
+import { useRouter } from "next/navigation";
 
+//////////////////////////////////////////////////////
+// TYPES
+//////////////////////////////////////////////////////
+
+type QuestionCategory = "Leading Self" | "Leading Others" | "";
+
+interface QuestionItem {
+  text: string;
+  category: QuestionCategory;
+}
+
+const CATEGORY_OPTIONS: QuestionCategory[] = [
+  "Leading Self",
+  "Leading Others",
+];
+
+//////////////////////////////////////////////////////
+// PAGE
+//////////////////////////////////////////////////////
+
+export default function CreateFormPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [questions, setQuestions] = useState<string[]>([""]);
+  const [questions, setQuestions] = useState<QuestionItem[]>([
+    { text: "", category: "" },
+  ]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   // ✅ Add new question
   const addQuestion = () => {
-    setQuestions([...questions, ""]);
+    setQuestions([...questions, { text: "", category: "" }]);
   };
 
   // ✅ Remove question
   const removeQuestion = (index: number) => {
     const updated = questions.filter((_, i) => i !== index);
-    setQuestions(updated.length ? updated : [""]);
+    setQuestions(updated.length ? updated : [{ text: "", category: "" }]);
   };
 
   // ✅ Update question text
-  const updateQuestion = (index: number, value: string) => {
+  const updateQuestionText = (index: number, value: string) => {
     const updated = [...questions];
-    updated[index] = value;
+    updated[index] = { ...updated[index], text: value };
+    setQuestions(updated);
+  };
+
+  // ✅ Update question category
+  const updateQuestionCategory = (
+    index: number,
+    value: QuestionCategory
+  ) => {
+    const updated = [...questions];
+    updated[index] = { ...updated[index], category: value };
     setQuestions(updated);
   };
 
@@ -35,7 +67,7 @@ export default function CreateFormPage() {
       return;
     }
 
-    const filteredQuestions = questions.filter((q) => q.trim() !== "");
+    const filteredQuestions = questions.filter((q) => q.text.trim() !== "");
     if (filteredQuestions.length === 0) {
       setMessage("At least one question is required");
       return;
@@ -53,7 +85,8 @@ export default function CreateFormPage() {
         body: JSON.stringify({
           title,
           questions: filteredQuestions.map((q) => ({
-            text: q,
+            text: q.text,
+            ...(q.category ? { category: q.category } : {}),
           })),
         }),
       });
@@ -69,7 +102,7 @@ export default function CreateFormPage() {
 
       // Reset form
       setTitle("");
-      setQuestions([""]);
+      setQuestions([{ text: "", category: "" }]);
     } catch (error) {
       console.error(error);
       setMessage("❌ Error creating form");
@@ -80,39 +113,69 @@ export default function CreateFormPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6">Create Form</h1>
+      <h1 className="text-3xl font-bold mb-6 text-black">Create Form</h1>
 
-      <div className="bg-white p-6 rounded-xl shadow max-w-2xl mx-auto">
+      <div className="bg-white p-8 rounded-2xl shadow-md max-w-2xl mx-auto border border-gray-200">
 
         {/* ✅ Form Title */}
-        <label className="block mb-2 font-medium">Form Title</label>
+        <label className="block mb-2 font-bold text-slate-900">Form Title</label>
         <input
-          className="w-full border p-2 rounded mb-6"
+          className="w-full border-2 border-gray-100 p-3 rounded-xl mb-8 focus:border-blue-500 outline-none transition-all text-black font-semibold"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter form title"
         />
 
         {/* ✅ Questions */}
-        <h2 className="text-lg font-semibold mb-3">Questions</h2>
+        <h2 className="text-xl font-bold mb-4 text-slate-900 border-b pb-2">Questions</h2>
 
         {questions.map((q, index) => (
-          <div key={index} className="mb-4 flex gap-2 items-center">
-            <input
-              className="flex-1 border p-2 rounded"
-              value={q}
-              onChange={(e) => updateQuestion(index, e.target.value)}
-              placeholder={`Question ${index + 1}`}
-            />
+          <div key={index} className="mb-6 border-2 border-gray-50 rounded-2xl p-5 bg-gray-50/50 shadow-sm">
 
-            {questions.length > 1 && (
-              <button
-                onClick={() => removeQuestion(index)}
-                className="text-red-500 text-sm"
+            {/* Question text row */}
+            <div className="flex gap-3 items-center mb-4">
+              <span className="font-bold text-blue-600 text-lg">#{index + 1}</span>
+              <input
+                className="flex-1 border-2 border-white p-3 rounded-xl bg-white shadow-sm focus:border-blue-500 outline-none transition-all text-black font-medium"
+                value={q.text}
+                onChange={(e) => updateQuestionText(index, e.target.value)}
+                placeholder="Enter behavioral question text..."
+              />
+
+              {questions.length > 1 && (
+                <button
+                  onClick={() => removeQuestion(index)}
+                  className="text-red-500 hover:text-red-700 font-bold text-sm bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+
+            {/* Category dropdown row */}
+            <div className="flex items-center gap-4">
+              <label className="text-sm text-slate-900 font-bold whitespace-nowrap">
+                Category:
+              </label>
+              <select
+                className="border p-1 rounded text-sm bg-white flex-1"
+                value={q.category}
+                onChange={(e) =>
+                  updateQuestionCategory(
+                    index,
+                    e.target.value as QuestionCategory
+                  )
+                }
               >
-                Remove
-              </button>
-            )}
+                <option value="">— Select category —</option>
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
           </div>
         ))}
 
@@ -140,14 +203,13 @@ export default function CreateFormPage() {
 
       </div>
 
-     <button
-  onClick={() => router.push("/dashboard")}
-  className="mt-6 w-full bg-gray-300 py-2 rounded hover:bg-gray-400"
->
-  Back to Dashboard
-</button>
+      <button
+        onClick={() => router.push("/dashboard")}
+        className="mt-6 w-full max-w-2xl mx-auto block bg-gray-300 py-2 rounded hover:bg-gray-400"
+      >
+        Back to Dashboard
+      </button>
 
     </div>
-    
   );
 }

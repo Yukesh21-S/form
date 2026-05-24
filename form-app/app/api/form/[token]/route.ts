@@ -23,6 +23,10 @@ export async function GET(
   return NextResponse.json({
     formId: form.id,
     title: form.title,
+    participantName: invite.participant.fullName,
+    isSelf:
+      invite.relationshipType === "SELF" ||
+      invite.email.toLowerCase() === invite.participant.email.toLowerCase(),
     questions: form.questions.map((question: any) => ({
       questionId: question.id,
       text: question.text,

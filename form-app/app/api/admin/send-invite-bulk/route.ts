@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma";
 
 import {
   INVITE_TOKEN_LIFETIME_HOURS,
+  RELATIONSHIP_TYPES,
 } from "@/lib/feedback";
 
 import { sendInviteEmail } from "@/lib/mailer";
@@ -20,6 +21,10 @@ import { sendInviteEmail } from "@/lib/mailer";
 const formIdSchema = z.string().uuid();
 
 const emailSchema = z.string().email();
+
+const relationshipTypeSchema = z
+  .enum(RELATIONSHIP_TYPES)
+  .default("OTHER");
 
 //////////////////////////////////////////////////////
 // ERROR RESPONSE
@@ -120,6 +125,25 @@ export async function POST(
 
   const file =
     formData.get("file");
+
+  //////////////////////////////////////////////////////
+  // RELATIONSHIP TYPE (optional, defaults to OTHER)
+  //////////////////////////////////////////////////////
+
+  const relationshipTypeRaw =
+    formData.get("relationshipType");
+
+  const parsedRelType =
+    relationshipTypeSchema.safeParse(
+      typeof relationshipTypeRaw === "string"
+        ? relationshipTypeRaw
+        : "OTHER"
+    );
+
+  const relationshipType =
+    parsedRelType.success
+      ? parsedRelType.data
+      : "OTHER";
 
   //////////////////////////////////////////////////////
   // VALIDATE FORM ID
@@ -323,6 +347,19 @@ export async function POST(
     // CREATE INVITE TOKEN
     //////////////////////////////////////////////////////
 
+    //////////////////////////////////////////////////////
+    // AUTO-DETECT RELATIONSHIP TYPE
+    //////////////////////////////////////////////////////
+
+    const finalRelationshipType =
+      email.toLowerCase() === participant.email.toLowerCase()
+        ? "SELF"
+        : relationshipType;
+
+    //////////////////////////////////////////////////////
+    // CREATE INVITE TOKEN
+    //////////////////////////////////////////////////////
+
     const invite =
       await prisma.inviteToken.create({
         data: {
@@ -335,6 +372,14 @@ export async function POST(
             parseFormId.data,
 
           participantId,
+
+          //////////////////////////////////////////////////////
+          // STORE RELATIONSHIP TYPE
+          //////////////////////////////////////////////////////
+
+          relationshipType: finalRelationshipType,
+
+          //////////////////////////////////////////////////////
 
           expiresAt,
         },

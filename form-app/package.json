@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "export PATH=\"/home/user/.nvm/versions/node/v24.13.1/bin:$PATH\" && next dev",
+    "build": "export PATH=\"/home/user/.nvm/versions/node/v24.13.1/bin:$PATH\" && next build",
+    "start": "export PATH=\"/home/user/.nvm/versions/node/v24.13.1/bin:$PATH\" && next start",
+    "lint": "eslint",
+    "db:seed": "/home/user/.nvm/versions/node/v24.13.1/bin/node ./node_modules/.bin/tsx prisma/seed.ts",
+    "prisma:generate": "/home/user/.nvm/versions/node/v24.13.1/bin/node ./node_modules/.bin/prisma generate",
+    "prisma:migrate": "/home/user/.nvm/versions/node/v24.13.1/bin/node ./node_modules/.bin/prisma migrate dev",
+    "prisma:studio": "/home/user/.nvm/versions/node/v24.13.1/bin/node ./node_modules/.bin/prisma studio"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -32,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }

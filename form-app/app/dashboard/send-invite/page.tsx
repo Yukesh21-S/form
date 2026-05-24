@@ -262,7 +262,7 @@ export default function SendInvitePage() {
         // FORM SELECT
         ////////////////////////////////////////////////////// */}
 
-        <div className="bg-white p-5 rounded-xl shadow">
+        <div className="bg-white p-5 rounded-xl shadow text-black">
 
           <label className="block mb-2 font-medium">
             Select Form
@@ -304,10 +304,10 @@ export default function SendInvitePage() {
         // PARTICIPANT SELECT
         ////////////////////////////////////////////////////// */}
 
-        <div className="bg-white p-5 rounded-xl shadow">
+        <div className="bg-white p-5 rounded-xl shadow text-black">
 
           <label className="block mb-2 font-medium">
-            Select Participant
+            Select Participant (The person being reviewed)
           </label>
 
           <select
@@ -346,12 +346,13 @@ export default function SendInvitePage() {
 
           </select>
         </div>
+
 {/* 
         //////////////////////////////////////////////////////
         // EMAIL SECTION
         ////////////////////////////////////////////////////// */}
 
-        <div className="bg-white p-5 rounded-xl shadow">
+        <div className="bg-white p-5 rounded-xl shadow text-black">
 
           <h2 className="font-semibold mb-3">
             Send via Email
@@ -392,7 +393,7 @@ export default function SendInvitePage() {
         // BULK UPLOAD
         ////////////////////////////////////////////////////// */}
 
-        <div className="bg-white p-5 rounded-xl shadow">
+        <div className="bg-white p-5 rounded-xl shadow text-black">
 
           <h2 className="font-semibold mb-3">
             Bulk Upload (Excel)
@@ -400,11 +401,8 @@ export default function SendInvitePage() {
 
           <input
             type="file"
-
             accept=".xlsx"
-
             className="mb-4"
-
             onChange={(e) =>
               setFile(
                 e.target.files?.[0] ||

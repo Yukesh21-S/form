@@ -100,7 +100,7 @@ export default function ParticipantsPage() {
               {participant.fullName}
             </h2>
 
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-700 text-sm font-medium">
               {participant.email}
             </p>
 
