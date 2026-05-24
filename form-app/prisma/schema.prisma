@@ -6,70 +6,164 @@ datasource db {
   provider = "postgresql"
 }
 
+//////////////////////////////////////////////////////
+// FORM
+//////////////////////////////////////////////////////
+
 model Form {
-  id        String        @id @default(uuid())
-  title     String
-  createdAt DateTime      @default(now())
-  tokens    InviteToken[]
-  questions Question[]
-  responses Response[]
+  id           String        @id @default(uuid())
+  title        String
+
+  createdAt    DateTime      @default(now())
+
+  questions    Question[]
+  responses    Response[]
+  tokens       InviteToken[]
+
 }
+
+//////////////////////////////////////////////////////
+// PARTICIPANT
+//////////////////////////////////////////////////////
+
+model Participant {
+  id            String    @id @default(uuid())
+
+  employeeId    String?
+  fullName      String
+  email         String    @unique
+
+  department    String?
+  designation   String?
+
+  createdAt     DateTime  @default(now())
+
+}
+
+//////////////////////////////////////////////////////
+// QUESTION
+//////////////////////////////////////////////////////
 
 model Question {
-  id        String       @id @default(uuid())
-  text      String
-  formId    String
-  ratingMax Int?
-  ratingMin Int?
-  type      QuestionType @default(MULTIPLE_CHOICE)
-  answers   Answer[]
-  options   Option[]
-  form      Form         @relation(fields: [formId], references: [id])
+  id          String       @id @default(uuid())
+
+  text        String
+
+  formId      String
+  form        Form         @relation(fields: [formId], references: [id])
+
+
+  // type        QuestionType @default(MULTIPLE_CHOICE)
+
+  options     Option[]
+  answers     Answer[]
 }
+
+//////////////////////////////////////////////////////
+// OPTION
+//////////////////////////////////////////////////////
 
 model Option {
-  id         String   @id @default(uuid())
-  label      String
-  value      Int?
-  questionId String
-  answers    Answer[]
-  question   Question @relation(fields: [questionId], references: [id])
+  id          String    @id @default(uuid())
+
+  label       String
+  value       Int?
+
+  questionId  String
+  question    Question  @relation(fields: [questionId], references: [id])
+
+  answers     Answer[]
 }
 
+//////////////////////////////////////////////////////
+// INVITE TOKEN
+//////////////////////////////////////////////////////
 model InviteToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  email     String
-  formId    String
-  isUsed    Boolean  @default(false)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  form      Form     @relation(fields: [formId], references: [id])
+  id             String   @id @default(uuid())
+
+  token          String   @unique
+
+  email          String
+
+  formId         String
+  form           Form     @relation(fields: [formId], references: [id])
+
+  //////////////////////////////////////////////////////
+  // ADD THIS
+  //////////////////////////////////////////////////////
+
+  participantId  String?
+
+  //////////////////////////////////////////////////////
+
+  isUsed         Boolean  @default(false)
+
+  expiresAt      DateTime
+
+  createdAt      DateTime @default(now())
 }
+//////////////////////////////////////////////////////
+// RESPONSE
+//////////////////////////////////////////////////////
 
 model Response {
-  id        String   @id @default(uuid())
-  email     String
-  formId    String
-  createdAt DateTime @default(now())
-  answers   Answer[]
-  form      Form     @relation(fields: [formId], references: [id])
+  id            String   @id @default(uuid())
+
+  email         String
+
+  //////////////////////////////////////////////////////
+  // FORM
+  //////////////////////////////////////////////////////
+
+  formId        String
+  form          Form     @relation(fields: [formId], references: [id])
+
+  //////////////////////////////////////////////////////
+  // PARTICIPANT
+  //////////////////////////////////////////////////////
+
+  participantId String?
+
+  //////////////////////////////////////////////////////
+  // CREATED DATE
+  //////////////////////////////////////////////////////
+
+  createdAt     DateTime @default(now())
+
+  //////////////////////////////////////////////////////
+  // ANSWERS
+  //////////////////////////////////////////////////////
+
+  answers       Answer[]
 }
+
+//////////////////////////////////////////////////////
+// ANSWER
+//////////////////////////////////////////////////////
 
 model Answer {
-  id          String   @id @default(uuid())
-  responseId  String
-  questionId  String
-  optionId    String?
-  ratingValue Int?
-  textValue   String?
-  option      Option?  @relation(fields: [optionId], references: [id])
-  question    Question @relation(fields: [questionId], references: [id])
-  response    Response @relation(fields: [responseId], references: [id])
+  id            String   @id @default(uuid())
+
+  responseId    String
+  response      Response @relation(fields: [responseId], references: [id])
+
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id])
+
+  optionId      String?
+  option        Option?  @relation(fields: [optionId], references: [id])
+
+  ratingValue   Int?
+
+  textValue     String?
 }
 
-enum QuestionType {
-  MULTIPLE_CHOICE
-  RATING
-  TEXT
-}
+//////////////////////////////////////////////////////
+// ENUM
+//////////////////////////////////////////////////////
+
+// enum QuestionType {
+//   MULTIPLE_CHOICE
+//   RATING
+//   TEXT
+// }

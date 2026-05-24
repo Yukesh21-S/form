@@ -46,14 +46,13 @@ export async function GET(req: Request) {
 
     const completionRate =
       totalInvited > 0
-        ? Number(
-            ((totalResponses / totalInvited) * 100).toFixed(2)
-          )
+        ? Number(((totalResponses / totalInvited) * 100).toFixed(2))
         : 0;
 
     // ✅ Process questions
     const questions = form.questions.map((q: any) => {
       const counts: Record<string, number> = {};
+
       q.options.forEach((opt: any) => {
         counts[opt.label] = 0;
       });
@@ -80,19 +79,38 @@ export async function GET(req: Request) {
       return {
         questionId: q.id,
         questionText: q.text,
-        averageScore: Number(avg.toFixed(2)),
+        averageScore: Number(avg.toFixed(2)), // ✅ single-question average
         distribution: counts,
       };
     });
 
+    // ✅ ✅ ADD THIS (OVERALL PARTICIPANT SCORE)
+
+    let total = 0;
+    let qCount = 0;
+
+    questions.forEach((q: any) => {
+      total += q.averageScore;
+      qCount++;
+    });
+
+    const overallAverage =
+      qCount > 0 ? Number((total / qCount).toFixed(2)) : 0;
+
+    // ✅ RESPONSE
     return NextResponse.json({
       formId,
       title: form.title,
       totalInvited,
       totalResponses,
       completionRate,
+
       questions,
+
+      overallAverage, // ✅ ADDDED (Participant overall score)
+
     });
+
   } catch (error) {
     console.error(error);
     return NextResponse.json(

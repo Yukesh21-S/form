@@ -36,7 +36,7 @@ export async function GET(request: Request) {
           },
         },
       },
-      tokens: true, // ✅ ADDED (to count invites)
+      tokens: true, //  ADDED (to count invites)
     },
   });
 
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     return jsonError("Form not found", 404);
   }
 
-  // ✅ NEW CALCULATIONS
+  //  NEW CALCULATIONS
   const totalInvited = form.tokens.length;
   const totalResponses = form.responses.length;
 
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       ? Number(((totalResponses / totalInvited) * 100).toFixed(2))
       : 0;
 
-  // ✅ QUESTION ANALYTICS
+  //  QUESTION ANALYTICS
   const questions = form.questions.map((question: any) => {
     const distribution = question.options.map((option: any) => ({
       optionId: option.id,
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
     };
   });
 
-  // ✅ FORMAT RESPONSES
+  //  FORMAT RESPONSES
   const responses = form.responses.map((response: any) => ({
     id: response.id,
     email: response.email,
@@ -110,14 +110,14 @@ export async function GET(request: Request) {
     })),
   }));
 
-  // ✅ FINAL RESPONSE
+  //  FINAL RESPONSE
   return NextResponse.json({
     formId: form.id,
     title: form.title,
 
-    totalInvited,       // ✅ NEW
-    totalResponses,     // ✅ EXISTING
-    completionRate,     // ✅ NEW
+    totalInvited,       // NEW
+    totalResponses,     // EXISTING
+    completionRate,     // NEW
 
     questions,
     responses,

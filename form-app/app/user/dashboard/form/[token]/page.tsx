@@ -13,7 +13,7 @@ export default function UserFormPage() {
   const [message, setMessage] = useState("");
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
-  // ✅ Fetch form
+  //  Fetch form
   useEffect(() => {
     const fetchForm = async () => {
       try {
@@ -35,7 +35,7 @@ export default function UserFormPage() {
     if (token) fetchForm();
   }, [token]);
 
-  // ✅ Handle selection
+  //  Handle selection
   const handleSelect = (questionId: string, optionId: string) => {
     setAnswers((prev) => ({
       ...prev,
@@ -43,12 +43,12 @@ export default function UserFormPage() {
     }));
   };
 
-  // ✅ Submit
+  // Submit
   const handleSubmit = async () => {
     if (!form?.questions) return;
 
     if (Object.keys(answers).length !== form.questions.length) {
-      setMessage("⚠️ Please answer all questions");
+      setMessage(" Please answer all questions");
       return;
     }
 
@@ -72,24 +72,24 @@ export default function UserFormPage() {
 
       setAlreadySubmitted(true);
     } catch {
-      setMessage("❌ Submission failed");
+      setMessage(" Submission failed");
     }
   };
 
-  // ✅ Loading
+  //  Loading
   if (loading) return <div className="p-6">Loading...</div>;
 
-  // ✅ Invalid token
+  //  Invalid token
   if (!form || !form.questions)
     return <div className="p-6">Invalid or expired link</div>;
 
-  // ✅ Already submitted page
+  //  Already submitted page
   if (alreadySubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="bg-white p-8 rounded shadow text-center">
           <h1 className="text-2xl font-bold mb-4">
-            ✅Submitted
+            Submitted
           </h1>
           <p className="text-gray-600">
             You have already submitted this form.
@@ -108,7 +108,7 @@ export default function UserFormPage() {
           {form.title}
         </h1>
 
-        {/* ✅ Questions */}
+        {/* Questions */}
         {form.questions.map((q: any, index: number) => (
           <div
             key={q.questionId}
@@ -127,7 +127,7 @@ export default function UserFormPage() {
               How consistently do you observe this behavior?
             </p>
 
-            {/* ✅ Label row */}
+            {/* Label row */}
             <div className="grid grid-cols-5 text-center text-xs text-gray-500 mb-2">
               {q.options.map((opt: any) => (
                 <span key={opt.optionId}>
@@ -137,7 +137,7 @@ export default function UserFormPage() {
               ))}
             </div>
 
-            {/* ✅ Radio row */}
+            {/*  Radio row */}
             <div className="grid grid-cols-5 text-center">
               {q.options.map((opt: any) => (
                 <input
@@ -155,7 +155,7 @@ export default function UserFormPage() {
           </div>
         ))}
 
-        {/* ✅ Submit */}
+        {/* Submit */}
         <button
           onClick={handleSubmit}
           className="mt-6 w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
@@ -163,7 +163,7 @@ export default function UserFormPage() {
           Submit
         </button>
 
-        {/* ✅ Message */}
+        {/* Message */}
         {message && (
           <p className="text-center mt-4 text-red-500">
             {message}

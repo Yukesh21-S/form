@@ -11,7 +11,7 @@ export default function FormDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ✅ Fetch form result data
+  // Fetch form result data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -36,17 +36,17 @@ export default function FormDetailsPage() {
     if (formId) fetchData();
   }, [formId]);
 
-  // ✅ Loading
+  //  Loading
   if (loading) {
     return <div className="p-6">Loading...</div>;
   }
 
-  // ✅ Error
+  //  Error
   if (error) {
     return <div className="p-6 text-red-500">{error}</div>;
   }
 
-  // ✅ No Data
+  //  No Data
   if (!data) {
     return <div className="p-6">No data found</div>;
   }

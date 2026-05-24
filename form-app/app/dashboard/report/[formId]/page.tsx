@@ -22,16 +22,24 @@ export default function ReportPage() {
 
   if (!data) return <div>Loading...</div>;
 
+  // Color logic
   const getColor = (score: number) => {
     if (score >= 85) return "bg-green-500";
     if (score >= 70) return "bg-orange-400";
     return "bg-red-500";
   };
 
+  //Label logic
+  const getLabel = (score: number) => {
+    if (score >= 85) return "Consistently Observed";
+    if (score >= 70) return "Moderately Observed";
+    return "Inconsistently Observed";
+  };
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
 
-      {/* ✅ Title */}
+      {/* Title */}
       <h1 className="text-2xl font-bold mb-2">
         Overall Results
       </h1>
@@ -39,14 +47,30 @@ export default function ReportPage() {
         Survey: {data.title}
       </p>
 
-      {/* ✅ Summary */}
+      {/* Summary */}
       <div className="flex gap-6 mb-8">
         <p>Invited: {data.totalInvited}</p>
         <p>Responses: {data.totalResponses}</p>
         <p>Completion: {data.completionRate}%</p>
       </div>
 
-      {/* ✅ Overall Bars */}
+      {/* OVERALL SCORE CARD */}
+      <div className="flex justify-center mb-10">
+        <div
+          className={`${getColor(
+            data.overallAverage
+          )} text-white px-10 py-6 rounded-lg text-center`}
+        >
+          <p className="text-4xl font-bold">
+            {Math.round(data.overallAverage)}%
+          </p>
+          <p className="text-sm mt-2">
+            {getLabel(data.overallAverage)}
+          </p>
+        </div>
+      </div>
+
+      {/* QUESTIONS (PER BEHAVIOR) */}
       <div className="space-y-4 mb-10">
         {data.questions.map((q: any) => (
           <div key={q.questionId}>
@@ -72,7 +96,7 @@ export default function ReportPage() {
         ))}
       </div>
 
-      {/* ✅ Distribution Table */}
+      {/* DISTRIBUTION TABLE */}
       <div className="bg-white p-6 rounded shadow">
         <h2 className="font-bold mb-4">
           Results Distribution
