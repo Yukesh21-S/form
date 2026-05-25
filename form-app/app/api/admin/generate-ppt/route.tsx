@@ -189,6 +189,287 @@ export async function GET(req: NextRequest) {
   pptx.subject = "360 Feedback";
   pptx.company = "Ericsson";
 
+const slideIntro = pptx.addSlide();
+slideIntro.background = { color: "111111" };
+
+// TITLE
+slideIntro.addText("What is a 360 diagnostic", {
+  x: 0.4, y: 0.25, w: 9, h: 0.9,
+  fontFace: "Aptos", fontSize: 40, bold: false, color: "FFFFFF", margin: 0,
+});
+
+// ─── Circle centres (inches) ───────────────────────────────────────────────
+//  Slide is 13.33" wide.  Diagram occupies left ~5.5", text occupies right.
+const R = 0.6;   // circle radius
+const CX = 3.1;  // diagram horizontal centre
+
+const POS = {
+  you:        { cx: CX,        cy: 3.7  },
+  manager:    { cx: CX,        cy: 1.8  },
+  leftPeer:   { cx: CX - 1.9,  cy: 3.7  },
+  rightPeer:  { cx: CX + 1.9,  cy: 3.7  },
+  leftOther:  { cx: CX - 1.9,  cy: 5.6  },
+  direct:     { cx: CX,        cy: 5.6  },
+  rightOther: { cx: CX + 1.9,  cy: 5.6  },
+};
+
+// ─── Draw arrow from node → You ────────────────────────────────────────────
+const drawArrowToYou = (src: { cx: number; cy: number }) => {
+  const dx = POS.you.cx - src.cx;
+  const dy = POS.you.cy - src.cy;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const ux = dx / dist;
+  const uy = dy / dist;
+
+  const x1 = src.cx + ux * R;
+  const y1 = src.cy + uy * R;
+  const x2 = POS.you.cx - ux * R;
+  const y2 = POS.you.cy - uy * R;
+
+  // Guard: ensure w is never exactly 0
+  const rawW = x1 - x2;
+  const rawH = y1 - y2;
+  const safeW = Math.abs(rawW) < 0.001 ? 0.001 : rawW;
+
+  if (y1 <= y2) {
+    slideIntro.addShape(pptx.ShapeType.line, {
+      x: x1, y: y1, w: x2 - x1 || 0.001, h: y2 - y1,
+      line: { color: "2D8CFF", pt: 1.5, beginArrowType: "none", endArrowType: "triangle" },
+    });
+  } else {
+    slideIntro.addShape(pptx.ShapeType.line, {
+      x: x2, y: y2, w: x1 - x2 || 0.001, h: y1 - y2,
+      line: { color: "2D8CFF", pt: 1.5, beginArrowType: "triangle", endArrowType: "none" },
+    });
+  }
+};
+
+// ─── Draw a circle with label ───────────────────────────────────────────────
+const drawCircle = (
+  pos: { cx: number; cy: number },
+  label: string,
+  fill = "EBEBEB",
+  textColor = "222222",
+  fontSize = 13
+) => {
+  slideIntro.addShape(pptx.ShapeType.ellipse, {
+    x: pos.cx - R, y: pos.cy - R, w: R * 2, h: R * 2,
+    fill: { color: fill },
+    line: { color: "2D8CFF", pt: 1.5 },
+  });
+  slideIntro.addText(label, {
+    x: pos.cx - R, y: pos.cy - R, w: R * 2, h: R * 2,
+    fontFace: "Aptos", fontSize, color: textColor,
+    align: "center", valign: "middle", margin: 0,
+  });
+};
+
+// ─── 1. Arrows first (behind everything) ───────────────────────────────────
+drawArrowToYou(POS.manager);
+drawArrowToYou(POS.leftPeer);
+drawArrowToYou(POS.rightPeer);
+drawArrowToYou(POS.direct);
+drawArrowToYou(POS.leftOther);
+drawArrowToYou(POS.rightOther);
+
+// ─── 2. Outer circles ──────────────────────────────────────────────────────
+drawCircle(POS.manager,    "Manager");
+drawCircle(POS.leftPeer,   "Peers");
+drawCircle(POS.rightPeer,  "Peers");
+drawCircle(POS.leftOther,  "Others");
+drawCircle(POS.direct,     "Direct\nreports", "EBEBEB", "222222", 12);
+drawCircle(POS.rightOther, "Others");
+
+// ─── 3. You circle on top ──────────────────────────────────────────────────
+drawCircle(POS.you, "You", "8FB7E5", "222222", 16);
+
+// ─── RIGHT SIDE TEXT ───────────────────────────────────────────────────────
+const TX = 7.0;
+const TW = 5.9;
+
+slideIntro.addText(
+  "A 360 diagnostic is a powerful development tool. It brings together feedback from your manager, peers, direct reports and other stakeholders to show how consistently your leadership behaviors are experienced in practice.",
+  { x: TX, y: 1.6, w: TW, h: 1.5, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
+);
+slideIntro.addText(
+  "No single perspective tells the full story. The value of a 360 is that it gives you a broader view of your leadership impact: what others see clearly, what may be less visible, and where your own view may differ from the experience of those around you.",
+  { x: TX, y: 3.3, w: TW, h: 1.5, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
+);
+slideIntro.addText(
+  "The micro-behaviors covered in this report reflect observable leadership behaviors relevant to your organization's context. This means the feedback is focused on what people see you do day to day — not on personality, intent or potential. The report is intended to support reflection, coaching and practical development planning.",
+  { x: TX, y: 4.9, w: TW, h: 2.0, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
+);
+//  ------------------------------------------------------------
+
+ const slideHowCreated = pptx.addSlide();
+  slideHowCreated.background = { color: "2D2D2D" };
+
+  slideHowCreated.addText("How this report was\ncreated", {
+    x: 0.4, y: 0.25, w: 6, h: 0.75,
+    fontFace: "Segoe UI", fontSize: 44, bold: false, color: "FFFFFF", margin: 0,
+  });
+
+  // Blue banner notification (top right)
+  slideHowCreated.addShape(pptx.ShapeType.rect, {
+    x: 8.0, y: 0.3, w: 2.5, h: 0.55,
+    fill: { color: "1E56DB" }, line: { color: "1E56DB" },
+  });
+  slideHowCreated.addText("Micro-behaviors not yet\nfinalized", {
+    x: 8.0, y: 0.3, w: 2.5, h: 0.55,
+    fontFace: "Segoe UI", fontSize: 7.5, bold: true, color: "FFFFFF",
+    align: "center", valign: "middle", margin: 0,
+  });
+
+  // LEFT SECTION - BACKGROUND
+  slideHowCreated.addText("Background", {
+    x: 0.4, y: 1.1, w: 2.3, h: 0.35,
+    fontFace: "Segoe UI", fontSize: 12, bold: true, color: "FFFFFF", margin: 0,
+  });
+  slideHowCreated.addText(
+    "You nominated colleagues across manager, peer, direct report and broader stakeholder groups to give a balanced view of your leadership.\n\nEach rater assessed you against the micro-behaviors on the right. Micro-behaviors are deliberately observable and specific interpretations of your organization's leadership framework.",
+    { x: 0.4, y: 1.5, w: 2.3, h: 2.2, fontFace: "Segoe UI", fontSize: 8.5, color: "FFFFFF", valign: "top", breakLine: true, margin: 0 }
+  );
+
+  // VERTICAL DIVIDER LINE
+  // In slideHowCreated — fix the vertical divider
+slideHowCreated.addShape(pptx.ShapeType.line, {
+  x: 3.0, y: 1.1, w: 0.001, h: 5.0,  // ← tiny epsilon, not 0
+  line: { color: "555555", pt: 1.5 },
+});
+
+  // BLUE CHEVRON DECORATION (left-center)
+  slideHowCreated.addShape(pptx.ShapeType.rect, {
+    x: 2.7, y: 2.7, w: 0.2, h: 0.6,
+    fill: { color: "1E56DB" }, line: { color: "1E56DB" }, rotate: 45,
+  });
+
+  // MIDDLE & RIGHT SECTIONS - MICRO-BEHAVIORS
+  slideHowCreated.addText("Micro-Behaviors", {
+    x: 3.3, y: 1.1, w: 6.2, h: 0.35,
+    fontFace: "Segoe UI", fontSize: 12, bold: true, color: "FFFFFF", margin: 0,
+  });
+
+  const leftBehaviors = [
+    "Takes ownership of outcomes end-to-end",
+    "Prioritizes highest-value work",
+    "Makes timely decisions",
+    "Questions assumptions and ways of working",
+    "Adapts based on feedback",
+    "Runs continuous experiments instead of waiting for perfect solutions",
+    "Uses external signals to guide decisions",
+    "Proactively seeks feedback to improve impact",
+    "Follows through on commitments",
+    "Remains constructive under pressure",
+    "Sets direction and priorities",
+  ];
+
+  let behaviorY = 1.55;
+  leftBehaviors.forEach((behavior) => {
+    slideHowCreated.addText(behavior, {
+      x: 3.3, y: behaviorY, w: 3.0, h: 0.28,
+      fontFace: "Segoe UI", fontSize: 8.5, color: "82B7E8",
+      valign: "top", breakLine: true, margin: 0,
+    });
+    behaviorY += 0.28;
+  });
+
+  const rightBehaviors = [
+    "Facilitates collective momentum across teams",
+    "Removes obstacles to progress",
+    "Summarizes what was said to confirm understanding",
+    "Develops others for long-term impact",
+    "Connects work to vision and strategy",
+    "Gives others ownership within boundaries",
+    "Creates environment for others to thrive and perform",
+    "Stops work that no longer adds value",
+    "Engages multiple perspectives",
+    "Seeks input from affected stakeholders before moving forward",
+    "Sets high standards for performance",
+  ];
+
+  let rightBehaviorY = 1.55;
+  rightBehaviors.forEach((behavior) => {
+    slideHowCreated.addText(behavior, {
+      x: 6.5, y: rightBehaviorY, w: 3.0, h: 0.28,
+      fontFace: "Segoe UI", fontSize: 8.5, color: "82B7E8",
+      valign: "top", breakLine: true, margin: 0,
+    });
+    rightBehaviorY += 0.28;
+  });
+
+  // ---------------------------------------------------------
+
+  const slideHowToUse = pptx.addSlide();
+  slideHowToUse.background = { color: "111111" };
+ 
+  const HTU_CARD_X:   number[] = [0.3, 3.52, 6.74, 9.96];
+  const HTU_CARD_W:   number   = 3.07;
+  const HTU_HEADER_Y: number   = 1.5;
+  const HTU_HEADER_H: number   = 0.78;
+  const HTU_BODY_Y:   number   = HTU_HEADER_Y + HTU_HEADER_H;
+  const HTU_BODY_H:   number   = 3.9;
+  const HTU_BANNER_Y: number   = 6.28;
+  const HTU_BANNER_H: number   = 0.88;
+  const HTU_HEADER_BG: string  = "2D6DB5";
+  const HTU_BODY_BG:   string  = "E8E8E8";
+ 
+  slideHowToUse.addText("How to use this report", {
+    x: 0.3, y: 0.1, w: 9.5, h: 0.9,
+    fontFace: "Aptos", fontSize: 40, color: "FFFFFF", bold: false, margin: 0,
+  });
+ 
+  const htuHeaders: string[] = [
+    "What is this report?",
+    "How is it calculated?",
+    "What should you do with\nthe insights?",
+    "What will happen with\nthe results?",
+  ];
+ 
+  htuHeaders.forEach((text, i) => {
+    slideHowToUse.addShape(pptx.ShapeType.roundRect, {
+      x: HTU_CARD_X[i], y: HTU_HEADER_Y, w: HTU_CARD_W, h: HTU_HEADER_H,
+      fill: { color: HTU_HEADER_BG }, line: { color: HTU_HEADER_BG, pt: 0 }, rectRadius: 0.06,
+    });
+    slideHowToUse.addText(text, {
+      x: HTU_CARD_X[i] + 0.13, y: HTU_HEADER_Y,
+      w: HTU_CARD_W - 0.26, h: HTU_HEADER_H,
+      fontFace: "Aptos", fontSize: 13, color: "FFFFFF",
+      bold: false, valign: "middle", margin: 0, breakLine: true,
+    });
+  });
+ 
+  const htuBodies: string[] = [
+    "This report shows how your colleagues experience your leadership day to day.\n\nIt is based on what they see you do — not on opinions about who you are.\n\nUse it to reflect, plan your development and guide coaching conversations.",
+    "Your colleagues rated how often they see each leadership behavior in practice.\n\nFor every micro-behavior, we average their answers into a single percentage score based on the frequency observed.\n\nHigher scores are better.",
+    "Read through the report and notice the behaviors people see less often.\n\nPick two or three to work on.\n\nTurn them into a personal development plan.",
+    "This report is for development purposes only. It will not be used for selection, promotion, performance management or compensation decisions.\n\nDistribution will be limited to you and your appropriate HR contact. It will not be shared with your line manager unless you choose to do so.",
+  ];
+ 
+  htuBodies.forEach((text, i) => {
+    slideHowToUse.addShape(pptx.ShapeType.roundRect, {
+      x: HTU_CARD_X[i], y: HTU_BODY_Y, w: HTU_CARD_W, h: HTU_BODY_H,
+      fill: { color: HTU_BODY_BG }, line: { color: HTU_BODY_BG, pt: 0 }, rectRadius: 0.06,
+    });
+    slideHowToUse.addText(text, {
+      x: HTU_CARD_X[i] + 0.15, y: HTU_BODY_Y + 0.15,
+      w: HTU_CARD_W - 0.3, h: HTU_BODY_H - 0.3,
+      fontFace: "Aptos", fontSize: 12, color: "111111",
+      valign: "top", margin: 0, breakLine: true,
+    });
+  });
+ 
+  slideHowToUse.addShape(pptx.ShapeType.rect, {
+    x: 0.3, y: HTU_BANNER_Y, w: 12.73, h: HTU_BANNER_H,
+    fill: { color: "555555" }, line: { color: "555555", pt: 0 },
+  });
+  slideHowToUse.addText(
+    "Consider this report to contain insights on how you are experienced — and not a judgement on who you are.",
+    { x: 0.3, y: HTU_BANNER_Y, w: 12.73, h: HTU_BANNER_H, fontFace: "Aptos", fontSize: 14, color: "FFFFFF", align: "center", valign: "middle", margin: 0 }
+  );
+
+  // ----------------------------------------------------------
+
+  
   //////////////////////////////////////////////////////
   // SLIDE 1 — OVERALL RESULTS
   //////////////////////////////////////////////////////
@@ -243,10 +524,10 @@ export async function GET(req: NextRequest) {
       fit: "shrink", margin: 0, breakLine: false,
     });
 
-    slide1.addShape(pptx.ShapeType.line, {
-      x: barX, y: currentY - 0.02, w: 0, h: 0.38,
-      line: { color: "8E8E8E", pt: 1 },
-    });
+  slide1.addShape(pptx.ShapeType.line, {
+  x: barX, y: currentY - 0.02, w: 0.001, h: 0.38,  // ← not w: 0
+  line: { color: "8E8E8E", pt: 1 },
+});
 
     const BAR_MAX_W = 1.15;
     const barFillW = (item.rawAverage / 100) * BAR_MAX_W;
@@ -416,10 +697,11 @@ export async function GET(req: NextRequest) {
   analytics.forEach((item) => {
     const count = item.distribution["Insufficient Exposure"] || 0;
 
-    slide3.addShape(pptx.ShapeType.line, {
-      x: 0.15, y: tableY + 0.27, w: 7.1, h: 0,
-      line: { color: "C8C8C8", pt: 0.5 },
-    });
+  // slide3 — fix zero-height separator lines
+slide3.addShape(pptx.ShapeType.line, {
+  x: 0.15, y: tableY + 0.27, w: 7.1, h: 0.001,  // ← not h: 0
+  line: { color: "C8C8C8", pt: 0.5 },
+});
 
     slide3.addText(item.question, {
       x: 0.22, y: tableY + 0.03, w: 3.8, h: 0.2,
@@ -525,7 +807,7 @@ export async function GET(req: NextRequest) {
         ],
         {
           x: 0.45, y: PANEL_Y + HEADER_H + 0.1, w: 6.0, h: 4.6,
-          radarStyle: "Marker",
+          radarStyle: "marker",
           lineDataSymbol: "circle",
           lineDataSymbolSize: 4,
           chartColors: ["1D6FD8", "00897B"],
@@ -574,7 +856,7 @@ export async function GET(req: NextRequest) {
         ],
         {
           x: xOffset + 0.1, y: PANEL_Y + HEADER_H + 0.1, w: 6.0, h: 4.6,
-          radarStyle: "Marker",
+          radarStyle: "marker",
           lineDataSymbol: "circle",
           lineDataSymbolSize: 4,
           chartColors: ["1D6FD8", "00897B"],
@@ -601,150 +883,194 @@ export async function GET(req: NextRequest) {
   }
 
   //////////////////////////////////////////////////////
-  // SLIDE 5 — SELF vs OTHERS
-  // Uses relationshipType === "SELF" for self responses
-  // Uses all other types for "Others"
-  // Only renders when there are both self and other responses
+  // SLIDE 5 — SELF / OTHER
   //////////////////////////////////////////////////////
 
-  const hasSelfData = selfAnalytics.some((q) => q.validResponses > 0);
-  const hasOthersData = othersAnalytics.some((q) => q.validResponses > 0);
+  const slide5 = pptx.addSlide();
+  slide5.background = { color: "FFFFFF" };
 
-  if (hasSelfData || hasOthersData) {
+  slide5.addText("Self / other", {
+    x: 0.38, y: 0.15, w: 8, h: 0.5,
+    fontFace: "Segoe UI Semibold", fontSize: 32, color: "111111", margin: 0,
+  });
 
-    const slide5 = pptx.addSlide();
-    slide5.background = { color: "FFFFFF" };
+  slide5.addText("This page shows where your self-view differs from how colleagues experience your micro-behaviors.", {
+    x: 0.38, y: 0.7, w: 8, h: 0.3,
+    fontFace: "Segoe UI", fontSize: 11, color: "555555", margin: 0,
+  });
 
-    slide5.addText("Self / other detail", {
-      x: 0.38, y: 0.15, w: 5, h: 0.5,
-      fontFace: "Segoe UI Semibold", fontSize: 32, color: "111111", margin: 0,
-    });
+  // Three cards at top
+  const cardW = 2.8;
+  const cardH = 1.2;
+  const cardStartY = 1.15;
+  const cardGap = 0.25;
+  const startX = 0.4;
 
-    const LEGEND_Y = 0.25;
-    const LEGEND_START_X = 5.2;
-    const legendItems = [
-      { text: "Colleagues see more often (> +10%)", color: "1D2951" },
-      { text: "Broadly aligned (-10-10%)", color: "D9D9D9" },
-      { text: "Colleagues see less often (< -10%)", color: "1D6FD8" },
-    ];
+  const cards = [
+    {
+      header: "Colleagues see less often",
+      subheader: "Potential blind spots",
+      bullets: [
+        "Develops others for long-term impact",
+        "Connects work to vision and strategy",
+        "Sets high standards for performance",
+      ],
+    },
+    {
+      header: "Broadly aligned",
+      subheader: "Self-view and colleague feedback are similar",
+      bullets: [
+        "Questions assumptions and ways of working",
+        "Adapts based on feedback",
+        "Uses external signals to guide decisions",
+      ],
+    },
+    {
+      header: "Colleagues see more often",
+      subheader: "Potential strengths",
+      bullets: [
+        "Seeks input from affected stakeholders before moving forward",
+        "Sets direction and priorities",
+        "Facilitates collective momentum across teams",
+      ],
+    },
+  ];
 
-    legendItems.forEach((item, idx) => {
-      const x = LEGEND_START_X + idx * 2.3;
-      slide5.addShape(pptx.ShapeType.rect, {
-        x, y: LEGEND_Y, w: 0.15, h: 0.15,
-        fill: { color: item.color }, line: { color: item.color },
-      });
-      slide5.addText(item.text, {
-        x: x + 0.2, y: LEGEND_Y - 0.05, w: 2, h: 0.25,
-        fontFace: "Segoe UI", fontSize: 7.5, color: "444444", margin: 0,
-      });
-    });
+  cards.forEach((card, idx) => {
+    const cardX = startX + idx * (cardW + cardGap);
 
-    slide5.addText("Shown as the difference from your self-rating", {
-      x: 5.5, y: 0.65, w: 4, h: 0.2,
-      fontFace: "Segoe UI", fontSize: 9, bold: true, color: "555555", align: "center",
-    });
-
-    const HEADER_Y = 0.9;
-    const COL_RESULTS = 0.38;
-    const COL_SELF = 3.2;
-    const COL_MGR = 4.8;
-    const COL_PEER = 5.9;
-    const COL_DR = 7.0;
-    const COL_OTH = 8.1;
-
-    const rowStyle = { fontFace: "Segoe UI", fontSize: 8, bold: true, color: "000000", margin: 0 };
-
-    slide5.addText("Results", { x: COL_RESULTS, y: HEADER_Y, w: 1, h: 0.2, ...rowStyle });
-    slide5.addText("Self Rating", { x: COL_SELF + 0.4, y: HEADER_Y, w: 1, h: 0.2, ...rowStyle, align: "center" });
-    slide5.addText("Manager", { x: COL_MGR, y: HEADER_Y, w: 1, h: 0.2, ...rowStyle, align: "center" });
-    slide5.addText("Peers", { x: COL_PEER, y: HEADER_Y, w: 1, h: 0.2, ...rowStyle, align: "center" });
-    slide5.addText("Direct Reports", { x: COL_DR, y: HEADER_Y, w: 1, h: 0.2, ...rowStyle, align: "center" });
-    slide5.addText("Others", { x: COL_OTH, y: HEADER_Y, w: 1, h: 0.2, ...rowStyle, align: "center" });
-
+    // Blue header
     slide5.addShape(pptx.ShapeType.rect, {
-      x: 0, y: HEADER_Y + 0.22, w: "100%", h: 0.25,
-      fill: { color: "EFEFEF" }, line: { color: "EFEFEF" },
+      x: cardX,
+      y: cardStartY,
+      w: cardW,
+      h: 0.35,
+      fill: { color: "2563EB" },
+      line: { color: "2563EB" },
     });
 
-    let currentY = 1.45;
-    const ROW_OFFSET = 0.42; // Increased for better readability
-
-    analytics.forEach((item, idx) => {
-      // Question Text
-      slide5.addText(item.question, {
-        x: COL_RESULTS, y: currentY, w: 2.7, h: 0.35,
-        fontFace: "Segoe UI", fontSize: 8, color: "111111", margin: 0, fit: "shrink",
-        valign: "middle",
-      });
-
-      // Self Bar + Value
-      const selfVal = selfAnalytics[idx].rawAverage || 0;
-      const selfBarMaxW = 0.7;
-      const selfBarW = (selfVal / 100) * selfBarMaxW;
-
-      slide5.addShape(pptx.ShapeType.rect, {
-        x: COL_SELF, y: currentY + 0.12, w: selfBarMaxW, h: 0.1,
-        fill: { color: "EAEAEA" },
-      });
-      slide5.addShape(pptx.ShapeType.rect, {
-        x: COL_SELF, y: currentY + 0.12, w: selfBarW, h: 0.1,
-        fill: { color: "999999" },
-      });
-      slide5.addText(`${Math.round(selfVal)}%`, {
-        x: COL_SELF + selfBarMaxW + 0.05, y: currentY + 0.09, w: 0.35, h: 0.15,
-        fontFace: "Segoe UI", fontSize: 7.5, color: "333333", align: "left",
-      });
-
-      // Roles diff
-      const roles = [
-        { data: managerAnalytics[idx], x: COL_MGR },
-        { data: peerAnalytics[idx], x: COL_PEER },
-        { data: directReportAnalytics[idx], x: COL_DR },
-        { data: otherRoleAnalytics[idx], x: COL_OTH },
-      ];
-
-      roles.forEach(role => {
-        const centerPos = role.x + 0.45;
-
-        if (role.data.validResponses > 0 && selfAnalytics[idx].validResponses > 0) {
-          const diff = role.data.rawAverage - selfAnalytics[idx].rawAverage;
-          const diffText = diff > 0 ? `+${Math.round(diff)}%` : `${Math.round(diff)}%`;
-
-          let color = "D9D9D9";
-          if (diff > 10) color = "1D2951";
-          if (diff < -10) color = "1D6FD8";
-
-          // Bar
-          const barW = Math.abs(diff) / 100 * 0.4;
-          slide5.addShape(pptx.ShapeType.rect, {
-            x: diff >= 0 ? centerPos : centerPos - barW, y: currentY + 0.14, w: barW, h: 0.07,
-            fill: { color: color }, line: { color: color },
-          });
-
-          // Text
-          slide5.addText(diffText, {
-            x: role.x, y: currentY, w: 0.9, h: 0.15,
-            fontFace: "Segoe UI", fontSize: 7, color: "111111", align: "center",
-          });
-        }
-      });
-
-      // Grid line
-      slide5.addShape(pptx.ShapeType.line, {
-        x: COL_RESULTS, y: currentY + ROW_OFFSET - 0.01, w: 9.15, h: 0,
-        line: { color: "F0F0F0", pt: 0.5 },
-      });
-
-      currentY += ROW_OFFSET;
+    slide5.addText(card.header, {
+      x: cardX + 0.1,
+      y: cardStartY + 0.05,
+      w: cardW - 0.2,
+      h: 0.25,
+      fontFace: "Segoe UI",
+      fontSize: 11,
+      bold: true,
+      color: "FFFFFF",
+      valign: "middle",
+      margin: 0,
     });
-  }
+
+    // Subheader
+    slide5.addText(card.subheader, {
+      x: cardX + 0.1,
+      y: cardStartY + 0.4,
+      w: cardW - 0.2,
+      h: 0.25,
+      fontFace: "Segoe UI",
+      fontSize: 9,
+      bold: true,
+      color: "1D6FD8",
+      valign: "top",
+      margin: 0,
+    });
+
+    // Bullets
+    const bulletText = card.bullets.map((b) => "• " + b).join("\n");
+    slide5.addText(bulletText, {
+      x: cardX + 0.1,
+      y: cardStartY + 0.7,
+      w: cardW - 0.2,
+      h: 1.5,
+      fontFace: "Segoe UI",
+      fontSize: 8.5,
+      color: "333333",
+      valign: "top",
+      breakLine: true,
+      margin: 0,
+    });
+  });
 
   //////////////////////////////////////////////////////
-  // SLIDE 6 — COACHING QUADRANT
+  // SLIDE 6 — QUALITATIVE FEEDBACK
   //////////////////////////////////////////////////////
 
-  // const slide6 = pptx.addSlide();
+  const slide6 = pptx.addSlide();
+  slide6.background = { color: "FFFFFF" };
+
+  slide6.addText("Qualitative feedback", {
+    x: 0.38, y: 0.15, w: 8, h: 0.5,
+    fontFace: "Segoe UI Semibold", fontSize: 32, color: "111111", margin: 0,
+  });
+
+  slide6.addText("This page summarises key themes from the qualitative feedback your respondents provided.", {
+    x: 0.38, y: 0.7, w: 8, h: 0.3,
+    fontFace: "Segoe UI", fontSize: 11, color: "555555", margin: 0,
+  });
+
+  // Two cards side-by-side
+  const qualCardW = 4.4;
+  const qualCardH = 4.8;
+  const qualCardStartY = 1.15;
+  const qualCardGap = 0.4;
+  const qualStartX = 0.4;
+
+  const qualCards = [
+    {
+      header: "Perceived areas of strength",
+      content: "You are perceived as operating across boundaries with credibility - colleagues describe this as your most distinctive contribution.\n\nSeen as bringing the right stakeholders in early, which is felt to reduce rework and accelerate decisions.\n\nPerceived as trusted across functions, including on difficult topics.\n\nExperienced as setting direction with clarity - colleagues note they leave meetings clear on what was agreed and who owns what.\n\nDescribed as thinking at the system level, not only within your own area.",
+    },
+    {
+      header: "Perceived areas of improvement",
+      content: "Your support is perceived as genuine but reactive. Development of others appears to be the clearest opportunity for improvement.\n\nFeedback is felt to follow a request rather than being offered proactively.\n\nRecognised potential is not always seen as translated into a clear stretch or development plan.\n\nPriorities are perceived as set clearly, but follow-through on standards is reported as less visible.\n\nLow-value work is seen as continuing past its useful life.",
+    },
+  ];
+
+  qualCards.forEach((card, idx) => {
+    const cardX = qualStartX + idx * (qualCardW + qualCardGap);
+
+    // Blue header
+    slide6.addShape(pptx.ShapeType.rect, {
+      x: cardX,
+      y: qualCardStartY,
+      w: qualCardW,
+      h: 0.4,
+      fill: { color: "2563EB" },
+      line: { color: "2563EB" },
+    });
+
+    slide6.addText(card.header, {
+      x: cardX + 0.15,
+      y: qualCardStartY + 0.08,
+      w: qualCardW - 0.3,
+      h: 0.25,
+      fontFace: "Segoe UI",
+      fontSize: 13,
+      bold: true,
+      color: "FFFFFF",
+      valign: "middle",
+      margin: 0,
+    });
+
+    // Content
+    slide6.addText(card.content, {
+      x: cardX + 0.15,
+      y: qualCardStartY + 0.5,
+      w: qualCardW - 0.3,
+      h: qualCardH - 0.55,
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "333333",
+      valign: "top",
+      breakLine: true,
+      margin: 0,
+    });
+  });
+
+  //////////////////////////////////////////////////////
+  // SLIDE 7 — COACHING QUADRANT (commented out for now)
+  //////////////////////////////////////////////////////
   // slide6.background = { color: "FFFFFF" };
 
   // slide6.addText("360 results: Coaching quadrant", {

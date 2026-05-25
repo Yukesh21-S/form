@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const adapter = new PrismaPg(
-  process.env.DATABASE_URL ?? "postgresql://postgres:123@localhost:5432/myapp"
+  process.env.DATABASE_URL ?? "postgresql://postgres:123@localhost:5432/form"
 );
 const prisma = new PrismaClient({ adapter });
 
