@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import pptxgen from "pptxgenjs";
 import prisma from "@/lib/prisma";
-
+import fs from "fs";
+import path from "path";
 //////////////////////////////////////////////////////
 // COLORS
 //////////////////////////////////////////////////////
@@ -198,90 +199,19 @@ slideIntro.addText("What is a 360 diagnostic", {
   fontFace: "Aptos", fontSize: 40, bold: false, color: "FFFFFF", margin: 0,
 });
 
-// ─── Circle centres (inches) ───────────────────────────────────────────────
-//  Slide is 13.33" wide.  Diagram occupies left ~5.5", text occupies right.
-const R = 0.6;   // circle radius
-const CX = 3.1;  // diagram horizontal centre
+// ─── DIAGRAM IMAGE (replaces all the arrow/circle drawing code) ────────────
 
-const POS = {
-  you:        { cx: CX,        cy: 3.7  },
-  manager:    { cx: CX,        cy: 1.8  },
-  leftPeer:   { cx: CX - 1.9,  cy: 3.7  },
-  rightPeer:  { cx: CX + 1.9,  cy: 3.7  },
-  leftOther:  { cx: CX - 1.9,  cy: 5.6  },
-  direct:     { cx: CX,        cy: 5.6  },
-  rightOther: { cx: CX + 1.9,  cy: 5.6  },
-};
 
-// ─── Draw arrow from node → You ────────────────────────────────────────────
-const drawArrowToYou = (src: { cx: number; cy: number }) => {
-  const dx = POS.you.cx - src.cx;
-  const dy = POS.you.cy - src.cy;
-  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-  const ux = dx / dist;
-  const uy = dy / dist;
+const diagramPath = path.join(process.cwd(), "public", "360_diagram.png");
+const diagramBase64 = fs.readFileSync(diagramPath).toString("base64");
 
-  const x1 = src.cx + ux * R;
-  const y1 = src.cy + uy * R;
-  const x2 = POS.you.cx - ux * R;
-  const y2 = POS.you.cy - uy * R;
-
-  // Guard: ensure w is never exactly 0
-  const rawW = x1 - x2;
-  const rawH = y1 - y2;
-  const safeW = Math.abs(rawW) < 0.001 ? 0.001 : rawW;
-
-  if (y1 <= y2) {
-    slideIntro.addShape(pptx.ShapeType.line, {
-      x: x1, y: y1, w: x2 - x1 || 0.001, h: y2 - y1,
-      line: { color: "2D8CFF", pt: 1.5, beginArrowType: "none", endArrowType: "triangle" },
-    });
-  } else {
-    slideIntro.addShape(pptx.ShapeType.line, {
-      x: x2, y: y2, w: x1 - x2 || 0.001, h: y1 - y2,
-      line: { color: "2D8CFF", pt: 1.5, beginArrowType: "triangle", endArrowType: "none" },
-    });
-  }
-};
-
-// ─── Draw a circle with label ───────────────────────────────────────────────
-const drawCircle = (
-  pos: { cx: number; cy: number },
-  label: string,
-  fill = "EBEBEB",
-  textColor = "222222",
-  fontSize = 13
-) => {
-  slideIntro.addShape(pptx.ShapeType.ellipse, {
-    x: pos.cx - R, y: pos.cy - R, w: R * 2, h: R * 2,
-    fill: { color: fill },
-    line: { color: "2D8CFF", pt: 1.5 },
-  });
-  slideIntro.addText(label, {
-    x: pos.cx - R, y: pos.cy - R, w: R * 2, h: R * 2,
-    fontFace: "Aptos", fontSize, color: textColor,
-    align: "center", valign: "middle", margin: 0,
-  });
-};
-
-// ─── 1. Arrows first (behind everything) ───────────────────────────────────
-drawArrowToYou(POS.manager);
-drawArrowToYou(POS.leftPeer);
-drawArrowToYou(POS.rightPeer);
-drawArrowToYou(POS.direct);
-drawArrowToYou(POS.leftOther);
-drawArrowToYou(POS.rightOther);
-
-// ─── 2. Outer circles ──────────────────────────────────────────────────────
-drawCircle(POS.manager,    "Manager");
-drawCircle(POS.leftPeer,   "Peers");
-drawCircle(POS.rightPeer,  "Peers");
-drawCircle(POS.leftOther,  "Others");
-drawCircle(POS.direct,     "Direct\nreports", "EBEBEB", "222222", 12);
-drawCircle(POS.rightOther, "Others");
-
-// ─── 3. You circle on top ──────────────────────────────────────────────────
-drawCircle(POS.you, "You", "8FB7E5", "222222", 16);
+slideIntro.addImage({
+  data: "image/png;base64," + diagramBase64,
+  x: 0.2,
+  y: 1.2,
+  w: 5.8,
+  h: 5.8,
+});
 
 // ─── RIGHT SIDE TEXT ───────────────────────────────────────────────────────
 const TX = 7.0;
