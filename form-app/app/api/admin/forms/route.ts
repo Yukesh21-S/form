@@ -3,10 +3,6 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { QUESTION_OPTIONS } from "@/lib/feedback";
 
-const QUESTION_CATEGORIES = [
-  "Leading Self",
-  "Leading Others",
-] as const;
 
 const createFormSchema = z.object({
   title: z.string().min(1),
@@ -14,7 +10,6 @@ const createFormSchema = z.object({
     .array(
       z.object({
         text: z.string().min(1),
-        category: z.enum(QUESTION_CATEGORIES).optional(),
       })
     )
     .min(1),
@@ -57,7 +52,6 @@ export async function POST(request: Request) {
       questions: {
         create: questions.map((question) => ({
           text: question.text,
-          category: question.category ?? null,
           options: {
             create: QUESTION_OPTIONS.map((option) => ({
               label: option.label,

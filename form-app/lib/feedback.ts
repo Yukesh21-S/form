@@ -8,21 +8,6 @@ export const QUESTION_OPTIONS = [
   { label: "Insufficient Exposure", value: null },
 ] as const;
 
-//////////////////////////////////////////////////////
-// RELATIONSHIP TYPES
-//////////////////////////////////////////////////////
-
-export const RELATIONSHIP_TYPES = [
-  "SELF",
-  "MANAGER",
-  "PEER",
-  "DIRECT_REPORT",
-  "OTHER",
-] as const;
-
-export type RelationshipType =
-  typeof RELATIONSHIP_TYPES[number];
-
 export const INVITE_TOKEN_LIFETIME_HOURS = 48;
 
 export async function getValidInviteToken(token: string) {

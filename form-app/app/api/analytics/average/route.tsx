@@ -56,6 +56,12 @@ export async function GET(req: Request) {
     );
   }
 
+  const participant = participantId
+    ? await prisma.participant.findUnique({
+        where: { id: participantId },
+      })
+    : null;
+
   //////////////////////////////////////////////////////
   // FILTER BY PARTICIPANT
   //////////////////////////////////////////////////////
@@ -73,15 +79,15 @@ export async function GET(req: Request) {
   const allResponses = form.responses;
 
   //////////////////////////////////////////////////////
-  // SELF vs OTHERS split using relationshipType
+  // SELF vs OTHERS split using email matching
   //////////////////////////////////////////////////////
 
   const selfResponses = filteredResponses.filter(
-    (r: any) => r.relationshipType === "SELF"
+    (r: any) => participant && r.email.toLowerCase() === participant.email.toLowerCase()
   );
 
   const othersResponses = filteredResponses.filter(
-    (r: any) => r.relationshipType !== "SELF"
+    (r: any) => !participant || r.email.toLowerCase() !== participant.email.toLowerCase()
   );
 
   //////////////////////////////////////////////////////
@@ -141,8 +147,6 @@ export async function GET(req: Request) {
 
         question: question.text,
 
-        category: question.category ?? null,
-
         distribution,
 
         totalScore: total,
@@ -178,36 +182,6 @@ export async function GET(req: Request) {
 
   const othersResults = computeResults(form.questions, othersResponses);
 
-  //////////////////////////////////////////////////////
-  // RESPONSE BREAKDOWN BY TYPE
-  //////////////////////////////////////////////////////
-
-  const responsesByType: Record<string, number> = {};
-
-  filteredResponses.forEach((r: any) => {
-    const type = r.relationshipType ?? "UNKNOWN";
-    responsesByType[type] = (responsesByType[type] ?? 0) + 1;
-  });
-
-  //////////////////////////////////////////////////////
-  // COMPETENCY GROUPING
-  //////////////////////////////////////////////////////
-
-  const leadingSelf = results.filter(
-    (q) => q.category === "Leading Self"
-  );
-
-  const leadingOthers = results.filter(
-    (q) => q.category === "Leading Others"
-  );
-
-  const enterpriseLeadingSelf = enterpriseResults.filter(
-    (q) => q.category === "Leading Self"
-  );
-
-  const enterpriseLeadingOthers = enterpriseResults.filter(
-    (q) => q.category === "Leading Others"
-  );
 
   //////////////////////////////////////////////////////
   // RESPONSE
@@ -220,18 +194,7 @@ export async function GET(req: Request) {
 
     totalResponses: filteredResponses.length,
 
-    responsesByType,
-
     results,
-
-    //////////////////////////////////////////////////////
-    // COMPETENCY GROUPS
-    //////////////////////////////////////////////////////
-
-    competencyGroups: {
-      leadingSelf,
-      leadingOthers,
-    },
 
     //////////////////////////////////////////////////////
     // ENTERPRISE BENCHMARK
@@ -239,15 +202,10 @@ export async function GET(req: Request) {
 
     enterpriseBenchmark: {
       results: enterpriseResults,
-
-      competencyGroups: {
-        leadingSelf: enterpriseLeadingSelf,
-        leadingOthers: enterpriseLeadingOthers,
-      },
     },
 
     //////////////////////////////////////////////////////
-    // SELF vs OTHERS (uses relationshipType field)
+    // SELF vs OTHERS (uses email matching)
     //////////////////////////////////////////////////////
 
     selfVsOthers: {

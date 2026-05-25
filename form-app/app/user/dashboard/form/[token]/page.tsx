@@ -12,12 +12,6 @@ export default function UserFormPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
-  const [relationshipType, setRelationshipType] = useState("PEER");
-
-  // Determine relationship types based on whether it's a self-assessment
-  const RELATIONSHIP_TYPES = form?.isSelf 
-    ? ["SELF", "MANAGER", "PEER", "DIRECT_REPORT", "OTHER"]
-    : ["MANAGER", "PEER", "DIRECT_REPORT", "OTHER"];
 
   //  Fetch form
   useEffect(() => {
@@ -30,9 +24,6 @@ export default function UserFormPage() {
           setAlreadySubmitted(true);
         }
 
-        if (data.isSelf) {
-          setRelationshipType("SELF");
-        }
 
         setForm(data);
       } catch {
@@ -63,7 +54,6 @@ export default function UserFormPage() {
     }
 
     const payload = {
-      relationshipType,
       answers: Object.entries(answers).map(
         ([questionId, optionId]) => ({
           questionId,
@@ -123,34 +113,6 @@ export default function UserFormPage() {
           Providing feedback for: <span className="font-bold text-blue-700">{form.participantName}</span>
         </p>
 
-        {/* Relationship Selector */}
-        <div className="bg-white p-6 rounded-xl shadow-sm mb-8 text-black border-l-4 border-blue-500">
-          <h2 className="font-semibold mb-3">Your Relationship</h2>
-          
-          {form.isSelf ? (
-            <div className="flex items-center gap-2 text-blue-800 font-bold bg-blue-50 p-3 rounded border border-blue-100">
-              <span>👤</span>
-              <span>Relationship: SELF (Self-Assessment)</span>
-            </div>
-          ) : (
-            <div>
-              <p className="text-sm text-gray-800 mb-3 font-medium">
-                Please select your relationship to {form.participantName}
-              </p>
-              <select
-                value={relationshipType}
-                onChange={(e) => setRelationshipType(e.target.value)}
-                className="w-full md:w-1/2 border-2 border-gray-200 p-2.5 rounded-lg focus:border-blue-500 outline-none bg-gray-50 transition-all font-bold text-gray-900 cursor-pointer"
-              >
-                {RELATIONSHIP_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
 
         {/* Questions */}
         {form.questions.map((q: any, index: number) => (

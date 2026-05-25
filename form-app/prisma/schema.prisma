@@ -52,8 +52,6 @@ model Question {
 
   text        String
 
-  category    String?
-
   formId      String
   form        Form         @relation(fields: [formId], references: [id])
 
@@ -96,15 +94,6 @@ model InviteToken {
   participantId    String?
   participant      Participant? @relation(fields: [participantId], references: [id])
 
-  //////////////////////////////////////////////////////
-  // RELATIONSHIP TYPE
-  // SELF | MANAGER | PEER | DIRECT_REPORT | OTHER
-  //////////////////////////////////////////////////////
-
-  relationshipType String?
-
-  //////////////////////////////////////////////////////
-
   isUsed           Boolean  @default(false)
 
   expiresAt        DateTime
@@ -133,17 +122,6 @@ model Response {
 
   participantId    String?
   participant      Participant? @relation(fields: [participantId], references: [id])
-
-  //////////////////////////////////////////////////////
-  // RELATIONSHIP TYPE
-  // SELF | MANAGER | PEER | DIRECT_REPORT | OTHER
-  //////////////////////////////////////////////////////
-
-  relationshipType String?
-
-  //////////////////////////////////////////////////////
-  // CREATED DATE
-  //////////////////////////////////////////////////////
 
   createdAt        DateTime @default(now())
 

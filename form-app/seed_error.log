@@ -1,0 +1,39 @@
+
+> form-app@0.1.0 db:seed
+> /home/user/.nvm/versions/node/v24.13.1/bin/node ./node_modules/.bin/tsx prisma/seed.ts
+
+🧹 Cleaning all existing responses and tokens...
+PrismaClientKnownRequestError: 
+Invalid `prisma.answer.deleteMany()` invocation in
+/home/user/Pictures/from-360/form/form-app/prisma/seed.ts:34:23
+
+  31 console.log("🧹 Cleaning all existing responses and tokens...");
+  32 
+  33 // Delete in order to avoid FK issues
+→ 34 await prisma.answer.deleteMany(
+Database `form` does not exist on the database server
+    at zr.handleRequestError (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/RequestHandler.ts:237:13)
+    at zr.handleAndLogRequestError (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/RequestHandler.ts:183:12)
+    at zr.request (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/RequestHandler.ts:152:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async a (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:963:24)
+    at async main (/home/user/Pictures/from-360/form/form-app/prisma/seed.ts:34:3) {
+  code: 'P1003',
+  meta: {
+    modelName: 'Answer',
+    driverAdapterError: DriverAdapterError: DatabaseDoesNotExist
+        at PrismaPgAdapter.onError (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/adapter-pg/dist/index.js:678:11)
+        at PrismaPgAdapter.performIO (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/adapter-pg/dist/index.js:673:12)
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+        at async PrismaPgAdapter.executeRaw (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/adapter-pg/dist/index.js:643:13)
+        at async e.interpretNode (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client-engine-runtime/src/interpreter/query-interpreter.ts:168:18)
+        at async e.interpretNode (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client-engine-runtime/src/interpreter/query-interpreter.ts:272:41)
+        at async e.run (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client-engine-runtime/src/interpreter/query-interpreter.ts:94:23)
+        at async e.execute (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/core/engines/client/LocalExecutor.ts:81:12)
+        at async jt.request (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/core/engines/client/ClientEngine.ts:504:22)
+        at async Object.singleLoader (/home/user/Pictures/from-360/form/form-app/node_modules/@prisma/client/src/runtime/RequestHandler.ts:112:26) {
+      cause: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}

@@ -7,17 +7,9 @@ import { useRouter } from "next/navigation";
 // TYPES
 //////////////////////////////////////////////////////
 
-type QuestionCategory = "Leading Self" | "Leading Others" | "";
-
 interface QuestionItem {
   text: string;
-  category: QuestionCategory;
 }
-
-const CATEGORY_OPTIONS: QuestionCategory[] = [
-  "Leading Self",
-  "Leading Others",
-];
 
 //////////////////////////////////////////////////////
 // PAGE
@@ -27,20 +19,20 @@ export default function CreateFormPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState<QuestionItem[]>([
-    { text: "", category: "" },
+    { text: "" },
   ]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   // ✅ Add new question
   const addQuestion = () => {
-    setQuestions([...questions, { text: "", category: "" }]);
+    setQuestions([...questions, { text: "" }]);
   };
 
   // ✅ Remove question
   const removeQuestion = (index: number) => {
     const updated = questions.filter((_, i) => i !== index);
-    setQuestions(updated.length ? updated : [{ text: "", category: "" }]);
+    setQuestions(updated.length ? updated : [{ text: "" }]);
   };
 
   // ✅ Update question text
@@ -50,15 +42,6 @@ export default function CreateFormPage() {
     setQuestions(updated);
   };
 
-  // ✅ Update question category
-  const updateQuestionCategory = (
-    index: number,
-    value: QuestionCategory
-  ) => {
-    const updated = [...questions];
-    updated[index] = { ...updated[index], category: value };
-    setQuestions(updated);
-  };
 
   // ✅ Submit form
   const handleSubmit = async () => {
@@ -86,7 +69,6 @@ export default function CreateFormPage() {
           title,
           questions: filteredQuestions.map((q) => ({
             text: q.text,
-            ...(q.category ? { category: q.category } : {}),
           })),
         }),
       });
@@ -102,7 +84,7 @@ export default function CreateFormPage() {
 
       // Reset form
       setTitle("");
-      setQuestions([{ text: "", category: "" }]);
+      setQuestions([{ text: "" }]);
     } catch (error) {
       console.error(error);
       setMessage("❌ Error creating form");
@@ -152,29 +134,6 @@ export default function CreateFormPage() {
               )}
             </div>
 
-            {/* Category dropdown row */}
-            <div className="flex items-center gap-4">
-              <label className="text-sm text-slate-900 font-bold whitespace-nowrap">
-                Category:
-              </label>
-              <select
-                className="border p-1 rounded text-sm bg-white flex-1"
-                value={q.category}
-                onChange={(e) =>
-                  updateQuestionCategory(
-                    index,
-                    e.target.value as QuestionCategory
-                  )
-                }
-              >
-                <option value="">— Select category —</option>
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
 
           </div>
         ))}

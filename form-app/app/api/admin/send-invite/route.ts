@@ -6,7 +6,6 @@ import prisma from "@/lib/prisma";
 
 import {
   INVITE_TOKEN_LIFETIME_HOURS,
-  RELATIONSHIP_TYPES,
 } from "@/lib/feedback";
 
 import { sendInviteEmail } from "@/lib/mailer";
@@ -21,16 +20,6 @@ const inviteSchema = z.object({
   formId: z.string().uuid(),
 
   participantId: z.string(),
-
-  //////////////////////////////////////////////////////
-  // RELATIONSHIP TYPE
-  // SELF | MANAGER | PEER | DIRECT_REPORT | OTHER
-  //////////////////////////////////////////////////////
-
-  relationshipType: z
-    .enum(RELATIONSHIP_TYPES)
-    .optional()
-    .default("OTHER"),
 });
 
 const emailSchema = z.string().email();
@@ -95,7 +84,6 @@ export async function POST(
     email: emailRaw,
     formId,
     participantId,
-    relationshipType,
   } = parseResult.data;
 
   //////////////////////////////////////////////////////
@@ -205,16 +193,6 @@ export async function POST(
       1000
     );
 
-    //////////////////////////////////////////////////////
-    // AUTO-DETECT RELATIONSHIP TYPE
-    // If the email being invited matches the participant's
-    // own email, force it to 'SELF'.
-    //////////////////////////////////////////////////////
-
-    const finalRelationshipType =
-      email.toLowerCase() === participant.email.toLowerCase()
-        ? "SELF"
-        : relationshipType;
 
     //////////////////////////////////////////////////////
     // CREATE INVITE TOKEN
@@ -232,11 +210,6 @@ export async function POST(
 
           participantId,
 
-          //////////////////////////////////////////////////////
-          // STORE RELATIONSHIP TYPE
-          //////////////////////////////////////////////////////
-
-          relationshipType: finalRelationshipType,
 
           //////////////////////////////////////////////////////
 
@@ -297,8 +270,6 @@ export async function POST(
       formId,
 
       participantId,
-
-      relationshipType,
 
       participantName:
         participant.fullName,
