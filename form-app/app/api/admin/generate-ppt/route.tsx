@@ -3,6 +3,8 @@ import pptxgen from "pptxgenjs";
 import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
+
+ import verbatimQuotesData, { coachingQuadrantData, leadershipImpactData, personalDevelopmentPlanData, positiveImpactData, resultsAtGlanceData, verbatimThemesData } from "../form-participants/datas";
 //////////////////////////////////////////////////////
 // COLORS
 //////////////////////////////////////////////////////
@@ -96,6 +98,99 @@ function computeAnalytics(questions: any[], responses: any[]) {
 }
 
 //////////////////////////////////////////////////////
+// ERICSSON BRANDING HELPERS
+//////////////////////////////////////////////////////
+
+function getEricssonLogoSvg(color: string) {
+  const hexColor = color.startsWith("#") ? color : `#${color}`;
+  const dPath = "M20.76 1.593A2.36 2.36 0 0 0 19.572.225c-.54-.27-1.188-.336-2.256.02L5.187 4.29c-1.068.357-1.548.795-1.818 1.338a2.36 2.36 0 0 0 1.059 3.174c.54.27 1.188.336 2.256-.021l12.129-4.044c1.068-.354 1.548-.795 1.818-1.338a2.35 2.35 0 0 0 .13-1.806zm0 7.485a2.36 2.36 0 0 0-1.188-1.368c-.54-.27-1.188-.336-2.256.021L5.187 11.775c-1.068.357-1.548.795-1.818 1.338a2.36 2.36 0 0 0 1.059 3.174c.54.27 1.188.336 2.256-.021l12.129-4.041c1.068-.357 1.548-.795 1.818-1.341a2.35 2.35 0 0 0 .13-1.806zm0 7.488a2.36 2.36 0 0 0-1.188-1.368c-.54-.27-1.188-.336-2.256.021L5.187 19.263c-1.068.357-1.548.795-1.818 1.338a2.36 2.36 0 0 0 1.059 3.174c.54.27 1.188.336 2.256-.02l12.129-4.045c1.068-.354 1.548-.795 1.818-1.338a2.35 2.35 0 0 0 .13-1.806z";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${hexColor}" d="${dPath}"/></svg>`;
+}
+
+function getEricssonLogoBase64(color: string) {
+  const svg = getEricssonLogoSvg(color);
+  return "data:image/svg+xml;base64," + Buffer.from(svg).toString("base64");
+}
+
+function addLogoToSlide(slide: any, isDarkBg: boolean) {
+  const color = isDarkBg ? "FFFFFF" : "000000";
+  const logoBase64 = getEricssonLogoBase64(color);
+  
+  // Add Logo symbol
+  slide.addImage({
+    data: logoBase64,
+    x: 12.45,
+    y: 0.22,
+    w: 0.35,
+    h: 0.35,
+  });
+  
+  // Add "ERICSSON" text underneath it
+  slide.addText("ERICSSON", {
+    x: 12.15,
+    y: 0.59,
+    w: 0.95,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 6.5,
+    bold: true,
+    color: color,
+    align: "center",
+    margin: 0,
+  });
+}
+
+//////////////////////////////////////////////////////
+// GLOBAL FOOTER HELPER
+//////////////////////////////////////////////////////
+function addFooterToSlide(
+  slide: any,
+  pptx: any,
+  participantName: string,
+  date: string,
+  pageNumber: number,
+  x: number = 10.4,
+  y: number = 7.3,
+  w: number = 2.5,
+  h: number = 0.18
+) {
+  // ── Left: "Leadership Assessments  |  Ericsson  |  Page N" ───────────────
+  slide.addText(`Leadership Assessments  |  Ericsson  |  Page ${pageNumber}`, {
+    x: 0.25,
+    y: y,
+    w: 6.0,
+    h: h,
+    fontFace: "Segoe UI",
+    fontSize: 7,
+    color: "888888",
+    margin: 0,
+    valign: "middle",
+    align: "left",
+  });
+
+  // ── Right: red participant name & date box ────────────────────────────────
+  slide.addShape(pptx.ShapeType.rect, {
+    x, y, w, h,
+    fill: { color: "FFFFFF" },
+    line: { color: "B00000", pt: 1 },
+  });
+
+  slide.addText(`${participantName} & ${date}`, {
+    x: x + 0.05,
+    y: y + 0.02,
+    w: w - 0.1,
+    h: h - 0.04,
+    fontFace: "Segoe UI",
+    fontSize: 6.5,
+    color: "B00000",
+    bold: true,
+    align: "center",
+    valign: "middle",
+    margin: 0,
+  });
+}
+
+//////////////////////////////////////////////////////
 // ROUTE
 //////////////////////////////////////////////////////
 
@@ -132,6 +227,13 @@ export async function GET(req: NextRequest) {
   if (!form) {
     return Response.json({ error: "Form not found" }, { status: 404 });
   }
+
+  //////////////////////////////////////////////////////
+  // GLOBAL FOOTER VARIABLES
+  //////////////////////////////////////////////////////
+  
+  const participantName = form.responses[0]?.participant?.fullName || "PARTICIPANT";
+  const footerDate = new Date().toLocaleDateString();
 
   //////////////////////////////////////////////////////
   // RESPONSE POOLS
@@ -174,6 +276,7 @@ export async function GET(req: NextRequest) {
 
   const slideIntro = pptx.addSlide();
   slideIntro.background = { color: "111111" };
+  addLogoToSlide(slideIntro, true);
 
   // TITLE
   slideIntro.addText("What is a 360 diagnostic", {
@@ -212,8 +315,12 @@ export async function GET(req: NextRequest) {
     { x: TX, y: 4.9, w: TW, h: 2.0, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
   );
 
+  // Footer for Intro
+  addFooterToSlide(slideIntro, pptx, participantName, footerDate,1, 10.80, 7.10, 2.30, 0.28);
+
   const slideHowCreated = pptx.addSlide();
   slideHowCreated.background = { color: "111111" }; // Dark theme matched to screenshot
+  addLogoToSlide(slideHowCreated, true);
 
   // TITLES
   slideHowCreated.addText("How this report was\ncreated", {
@@ -313,10 +420,14 @@ export async function GET(req: NextRequest) {
     rightBehaviorY += lineSpacing;
   });
 
+  // Footer for How Created
+  addFooterToSlide(slideHowCreated, pptx, participantName, footerDate,2, 10.80, 7.10, 2.30, 0.28);
+
   // ---------------------------------------------------------
 
   const slideHowToUse = pptx.addSlide();
   slideHowToUse.background = { color: "111111" };
+  addLogoToSlide(slideHowToUse, true);
 
   const HTU_CARD_X: number[] = [0.3, 3.52, 6.74, 9.96];
   const HTU_CARD_W: number = 3.07;
@@ -383,6 +494,9 @@ export async function GET(req: NextRequest) {
     { x: 0.3, y: HTU_BANNER_Y, w: 12.73, h: HTU_BANNER_H, fontFace: "Aptos", fontSize: 14, color: "FFFFFF", align: "center", valign: "middle", margin: 0 }
   );
 
+  // Footer for How To Use
+  addFooterToSlide(slideHowToUse, pptx, participantName, footerDate,3, 10.80, 7.10, 2.30, 0.28);
+
   // ----------------------------------------------------------
 
 
@@ -394,39 +508,66 @@ export async function GET(req: NextRequest) {
   slide1.background = { color: COLORS.bg };
 
   slide1.addText("Overall results", {
-    x: 0.38, y: 0.22, w: 4.5, h: 0.5,
+    x: 0.38, y: 0.22, w: 2.8, h: 0.5,
     fontFace: "Segoe UI", fontSize: 30, color: "111111", margin: 0,
   });
 
   slide1.addText(
     "How consistently micro-behaviors are seen in practice by your respondents.",
     {
-      x: 0.4, y: 0.88, w: 7, h: 0.2,
+      x: 0.38, y: 0.88, w: 7, h: 0.2,
       fontFace: "Segoe UI", fontSize: 11, color: "444444", margin: 0,
     }
   );
 
+  // Top center-right blue badges
+  slide1.addShape(pptx.ShapeType.roundRect, {
+    x: 3.3, y: 0.12, w: 1.7, h: 0.55,
+    fill: { color: "1D6FD8" }, line: { color: "1D6FD8" },
+    rectRadius: 0.12
+  });
+  slide1.addText("Micro-behaviors not yet\nfinalized", {
+    x: 3.3, y: 0.12, w: 1.7, h: 0.55,
+    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "FFFFFF",
+    align: "center", valign: "middle", margin: 0,
+  });
+
+  slide1.addShape(pptx.ShapeType.roundRect, {
+    x: 5.1, y: 0.12, w: 2.1, h: 0.35,
+    fill: { color: "1D6FD8" }, line: { color: "1D6FD8" },
+    rectRadius: 0.12
+  });
+  slide1.addText("ERICSSON TO DEFINE THRESHOLDS", {
+    x: 5.1, y: 0.12, w: 2.1, h: 0.35,
+    fontFace: "Segoe UI", fontSize: 8.0, bold: true, color: "FFFFFF",
+    align: "center", valign: "middle", margin: 0,
+  });
+
   // Legend
   const legends = [
-    { color: COLORS.green, text: "Consistently observed (>85%)", x: 6.9 },
-    { color: COLORS.orange, text: "Moderately observed (70-85%)", x: 9.0 },
-    { color: COLORS.red, text: "Inconsistently observed (<70%)", x: 11.25 },
+    { color: COLORS.green, text: "Consistently\nobserved (>85%)", x: 7.3 },
+    { color: "D96B27", text: "Moderately\nobserved (85-70%)", x: 8.8 }, // customized warm orange and label syntax to match image
+    { color: COLORS.red, text: "Inconsistently\nobserved (<70%)", x: 10.4 },
   ];
 
   legends.forEach((l) => {
     slide1.addShape(pptx.ShapeType.rect, {
-      x: l.x, y: 0.22, w: 0.18, h: 0.18,
+      x: l.x, y: 0.22, w: 0.16, h: 0.16,
       fill: { color: l.color }, line: { color: l.color },
     });
     slide1.addText(l.text, {
-      x: l.x + 0.24, y: 0.18, w: 1.8, h: 0.3,
-      fontFace: "Segoe UI", fontSize: 8.5, color: COLORS.text, margin: 0,
+      x: l.x + 0.22, y: 0.14, w: 1.2, h: 0.35,
+      fontFace: "Segoe UI", fontSize: 7.5, color: COLORS.text, margin: 0,
+      valign: "middle", breakLine: true,
     });
   });
 
+  // Top right Ericsson logo
+  addLogoToSlide(slide1, false);
+
   const SPLIT_INDEX = Math.ceil(analytics.length / 2);
-  let leftY = 1.05;
-  let rightY = 1.05;
+  let leftY = 1.22;
+  let rightY = 1.22;
   const Y_GAP = 0.40;
 
   analytics.forEach((item, index) => {
@@ -443,7 +584,7 @@ export async function GET(req: NextRequest) {
     });
 
     slide1.addShape(pptx.ShapeType.line, {
-      x: barX, y: currentY - 0.02, w: 0.001, h: 0.38,  // ← not w: 0
+      x: barX, y: currentY - 0.02, w: 0.001, h: 0.38,
       line: { color: "8E8E8E", pt: 1 },
     });
 
@@ -458,7 +599,7 @@ export async function GET(req: NextRequest) {
     });
 
     slide1.addText(`${item.roundedScore}%`, {
-      x: scoreX, y: currentY + 0.02, w: 0.8, h: 0.2, // Widened to 0.8 to prevent wrapping
+      x: scoreX, y: currentY + 0.02, w: 0.8, h: 0.2,
       fontFace: "Segoe UI", fontSize: 13,
       bold: false, color: COLORS.text, margin: 0,
     });
@@ -466,9 +607,15 @@ export async function GET(req: NextRequest) {
     if (isLeft) leftY += Y_GAP; else rightY += Y_GAP;
   });
 
-  //////////////////////////////////////////////////////
-  // SLIDE 2 — DISTRIBUTION
-  //////////////////////////////////////////////////////
+  // Footnote
+  slide1.addText("N.B. Scores are rounded to the nearest whole percentage before thresholds are applied.", {
+    x: 0.38, y: 6.82, w: 8.0, h: 0.18,
+    fontFace: "Segoe UI", fontSize: 7.5, color: "555555", margin: 0,
+  });
+
+  // Footer for Overall Results
+  addFooterToSlide(slide1, pptx, participantName, footerDate, 4, 10.80, 7.10, 2.30, 0.28);
+
 
   //////////////////////////////////////////////////////
   // SLIDE 2 — RESULTS DISTRIBUTION
@@ -476,6 +623,7 @@ export async function GET(req: NextRequest) {
 
   const slide2 = pptx.addSlide();
   slide2.background = { color: "FFFFFF" };
+  addLogoToSlide(slide2, false);
 
 
   slide2.addText("Results distribution", {
@@ -573,7 +721,7 @@ export async function GET(req: NextRequest) {
     // Bars - Normalized to stay within column
     const total = (dist.Rarely || 0) + (dist.Sometimes || 0) + (dist.Often || 0) + (dist.Always || 0);
     if (total > 0) {
-      // Divergent logic: Rarely/Sometimes go Left, Often/Always go Right
+      // Divergent logic: Rarely/Sometimes/Often go Left, Always goes Right
       // Max possible width for one side is COL_W[1] / 2 - padding
       const HALF_BAR_MAX_W = (COL_W[1] / 2) - 0.1; // 2.2 units
       const scale = HALF_BAR_MAX_W / total;
@@ -586,10 +734,10 @@ export async function GET(req: NextRequest) {
       const barY = y + (ROW_H * 0.2);
       const barH = ROW_H * 0.6;
 
-      if (wR > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wS - wR, y: barY, w: wR, h: barH, fill: { color: "9E0B0F" }, line: { pt: 0 } });
-      if (wS > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wS, y: barY, w: wS, h: barH, fill: { color: "FF0000" }, line: { pt: 0 } });
-      if (wO > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X, y: barY, w: wO, h: barH, fill: { color: "AD9380" }, line: { pt: 0 } });
-      if (wA > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X + wO, y: barY, w: wA, h: barH, fill: { color: "008032" }, line: { pt: 0 } });
+      if (wR > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wS - wO - wR, y: barY, w: wR, h: barH, fill: { color: "9E0B0F" }, line: { pt: 0 } });
+      if (wS > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wO - wS, y: barY, w: wS, h: barH, fill: { color: "FF0000" }, line: { pt: 0 } });
+      if (wO > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wO, y: barY, w: wO, h: barH, fill: { color: "AD9380" }, line: { pt: 0 } });
+      if (wA > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X, y: barY, w: wA, h: barH, fill: { color: "008032" }, line: { pt: 0 } });
     }
   });
 
@@ -599,15 +747,8 @@ export async function GET(req: NextRequest) {
     line: { color: "111111", pt: 1 }
   });
 
-  // Footer - Box style from template
-  slide2.addShape(pptx.ShapeType.rect, {
-    x: 10.4, y: 7.3, w: 2.5, h: 0.18,
-    fill: { color: "FFFFFF" }, line: { color: "B00000", pt: 1 },
-  });
-  slide2.addText(`${form.responses[0]?.participant?.fullName || "PARTICIPANT"} & ${new Date().toLocaleDateString()}`, {
-    x: 10.4, y: 7.3, w: 2.5, h: 0.18,
-    fontFace: "Segoe UI", fontSize: 6.5, color: "B00000", bold: true, align: "center",
-  });
+  // Footer
+  addFooterToSlide(slide2, pptx, participantName, footerDate,5, 10.80, 7.10, 2.30, 0.28);
 
   //////////////////////////////////////////////////////
   // SLIDE 3 — INSUFFICIENT EXPOSURES
@@ -615,6 +756,7 @@ export async function GET(req: NextRequest) {
 
   const slide3 = pptx.addSlide();
 slide3.background = { color: "FFFFFF" };
+addLogoToSlide(slide3, false);
 
 // ── Title ──────────────────────────────────────────────────────────────────
 slide3.addText("Insufficient Exposures", {
@@ -726,31 +868,48 @@ analytics.forEach((item, idx) => {
 });
 
 // ── Note box ───────────────────────────────────────────────────────────────
-// Positioned bottom-right; top aligns roughly with row 13 (~mid-slide)
-const NOTE_X = 7.20;
-const NOTE_Y = 3.50;
-const NOTE_W = 5.85;  // reaches to slide right edge with margin
 
-// "Note" header band
+const NOTE_X = 7.18;
+const NOTE_Y = 3.48;
+const NOTE_W = 3.85;
+
+// ================= HEADER =================
 slide3.addShape(pptx.ShapeType.rect, {
-  x: NOTE_X, y: NOTE_Y, w: NOTE_W, h: 0.30,
-  fill: { color: "9E9E9E" }, line: { color: "9E9E9E" },
+  x: NOTE_X,
+  y: NOTE_Y,
+  w: NOTE_W,
+  h: 0.26,
+  fill: { color: "A6A6A6" },
+  line: { color: "A6A6A6", pt: 0.5 },
 });
+
 slide3.addText("Note", {
-  x: NOTE_X + 0.10, y: NOTE_Y, w: 1.0, h: 0.30,
-  fontFace: "Segoe UI", fontSize: 9, bold: true, color: "FFFFFF",
-  margin: 0, valign: "middle",
+  x: NOTE_X + 0.10,
+  y: NOTE_Y + 0.01,
+  w: 0.6,
+  h: 0.18,
+  fontFace: "Segoe UI",
+  fontSize: 8.5,
+  bold: true,
+  color: "FFFFFF",
+  margin: 0,
+  valign: "middle",
 });
 
-// Note body background
-const NOTE_BODY_Y = NOTE_Y + 0.30;
-const NOTE_BODY_H = 3.50;  // extends to bottom of content area
+// ================= BODY =================
+const NOTE_BODY_Y = NOTE_Y + 0.26;
+const NOTE_BODY_H = 2.35;
+
 slide3.addShape(pptx.ShapeType.rect, {
-  x: NOTE_X, y: NOTE_BODY_Y, w: NOTE_W, h: NOTE_BODY_H,
-  fill: { color: "F0F0F0" }, line: { color: "D0D0D0", pt: 0.5 },
+  x: NOTE_X,
+  y: NOTE_BODY_Y,
+  w: NOTE_W,
+  h: NOTE_BODY_H,
+  fill: { color: "F2F2F2" },
+  line: { color: "D9D9D9", pt: 0.5 },
 });
 
-// Note body text
+// ================= BODY TEXT =================
 slide3.addText(
   [
     {
@@ -758,23 +917,39 @@ slide3.addText(
       options: { bold: false },
     },
     {
-      text: " is what a rater selects when they feel they have not seen sufficient evidence from you on this behavior to provide a rating. These answers are set ",
+      text:
+        " is what a rater selects when they feel they have not seen sufficient evidence from you on this behavior to provide a rating. These answers are set ",
       options: {},
     },
-      {
-        text: "aside",
-        options: { underline: true as any},
-      },
     {
-      text: " and they do not lower your score.\n\nA high count can itself be a signal as it can mean a behavior is not be visible to the people around you, even if you feel you are demonstrating it.\n\nIf you have areas with high insufficient exposure, we recommend you consider why you are receiving this feedback and what you could do to address this.",
+      text: "aside",
+      options: {
+        underline: true as any,
+        color: "0563C1",
+      },
+    },
+    {
+      text:
+        " and they do not lower your score.\n\nA high count can itself be a signal as it can mean a behavior is not be visible to the people around you, even if you feel you are demonstrating it.\n\nIf you have areas with high insufficient exposure, we recommend you consider why you are receiving this feedback and what you could do to address this.",
       options: {},
     },
   ],
   {
-    x: NOTE_X + 0.12, y: NOTE_BODY_Y + 0.10,
-    w: NOTE_W - 0.24, h: NOTE_BODY_H - 0.15,
-    fontFace: "Segoe UI", fontSize: 8.5, color: "222222",
-    valign: "top", breakLine: true, fit: "shrink", margin: 0,
+    x: NOTE_X + 0.10,
+    y: NOTE_BODY_Y + 0.08,
+    w: NOTE_W - 0.18,
+    h: NOTE_BODY_H - 0.12,
+
+    fontFace: "Segoe UI",
+    fontSize: 8.3,
+    color: "333333",
+
+    margin: 0,
+    breakLine: true,
+    valign: "top",
+
+   
+    fit: "shrink",
   }
 );
 
@@ -784,22 +959,16 @@ slide3.addText(
 //   fontFace: "Segoe UI", fontSize: 7, color: "888888", margin: 0, valign: "middle",
 // });
 
-// "PARTICIPANT NAME & DATE" button (bottom-right)
-slide3.addShape(pptx.ShapeType.rect, {
-  x: 10.80, y: 7.10, w: 2.30, h: 0.28,
-  fill: { color: "FFFFFF" }, line: { color: "CC0000", pt: 1 },
-});
-slide3.addText("PARTICIPANT NAME & DATE", {
-  x: 10.80, y: 7.10, w: 2.30, h: 0.28,
-  fontFace: "Segoe UI", fontSize: 6.5, bold: true, color: "CC0000",
-  margin: 0, valign: "middle", align: "center",
-});
+// Footer
+addFooterToSlide(slide3, pptx, participantName, footerDate,6, 10.80, 7.10, 2.30, 0.28);
+
   //////////////////////////////////////////////////////
   // SLIDE 5 — SELF / OTHER
   //////////////////////////////////////////////////////
 
   const slide5 = pptx.addSlide();
   slide5.background = { color: "FFFFFF" };
+  addLogoToSlide(slide5, false);
 
 
   slide5.addText("Self / other", {
@@ -891,94 +1060,202 @@ slide3.addText("PARTICIPANT NAME & DATE", {
   //   fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
   // });
 
+  // Footer for Self / Other
+  addFooterToSlide(slide5, pptx, participantName, footerDate,7, 10.80, 7.10, 2.30, 0.28);
+
   //////////////////////////////////////////////////////
   // SLIDE 6 — QUALITATIVE FEEDBACK
   //////////////////////////////////////////////////////
+const slide6 = pptx.addSlide();
 
-  const slide6 = pptx.addSlide();
-  slide6.background = { color: "FFFFFF" };
+slide6.background = { color: "F3F3F3" };
+addLogoToSlide(slide6, false);
 
+// ================= TITLE =================
+slide6.addText("Qualitative feedback", {
+  x: 0.28,
+  y: 0.18,
+  w: 5.5,
+  h: 0.45,
+  fontFace: "Segoe UI Light",
+  fontSize: 29,
+  color: "111111",
+  margin: 0,
+});
 
-  slide6.addText("Qualitative feedback", {
-    x: 0.38, y: 0.15, w: 8, h: 0.5,
-    fontFace: "Segoe UI Semibold", fontSize: 40, color: "111111", margin: 0,
+// ================= SUBTITLE =================
+slide6.addText(
+  "This page summarises key themes from the qualitative feedback your respondents provided.",
+  {
+    x: 0.3,
+    y: 0.82,
+    w: 7.8,
+    h: 0.2,
+    fontFace: "Segoe UI",
+    fontSize: 10.5,
+    color: "20354B",
+    margin: 0,
+  }
+);
+
+// ================= LAYOUT =================
+const qualCardW = 5.45;
+const qualCardGap = 0.12;
+const qualStartX = 0.22;
+const qualCardStartY = 1.25;
+
+const qualCards = [
+  {
+    header: "Perceived areas of strength",
+
+    description:
+      "You are perceived as operating across boundaries with credibility - colleagues describe this as your most distinctive contribution.",
+
+    bullets: [
+      "Seen as bringing the right stakeholders in early, which is felt to reduce rework and accelerate decisions.",
+
+      "Perceived as trusted across functions, including on difficult topics.",
+
+      "Experienced as setting direction with clarity - colleagues note they leave meetings clear on what was agreed and who owns what.",
+
+      "Described as thinking at the system level, not only within your own area.",
+    ],
+  },
+
+  {
+    header: "Perceived areas of improvement",
+
+    description:
+      "Your support is perceived as genuine but reactive. Development of others appears to be the clearest opportunity for improvement.",
+
+    bullets: [
+      "Feedback is felt to follow a request rather than being offered proactively.",
+
+      "Recognised potential is not always seen as translated into a clear stretch or development plan.",
+
+      "Priorities are perceived as set clearly, but follow-through on standards is reported as less visible.",
+
+      "Low-value work is seen as continuing past its useful life.",
+    ],
+  },
+];
+
+// ================= CARDS =================
+qualCards.forEach((card, idx) => {
+
+  const cardX = qualStartX + idx * (qualCardW + qualCardGap);
+
+  const HEADER_H = 0.42;
+  const BODY_H = 4.65;
+
+  // ===== MAIN CARD =====
+  slide6.addShape(pptx.ShapeType.roundRect, {
+    x: cardX,
+    y: qualCardStartY,
+    w: qualCardW,
+    h: BODY_H,
+    rectRadius: 0.12,
+    fill: { color: "E7E7ED" },
+    line: { color: "E7E7ED", pt: 0 },
   });
 
-  slide6.addText("This page summarises key themes from the qualitative feedback your respondents provided.", {
-    x: 0.38, y: 0.75, w: 10, h: 0.3,
-    fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
+  // ===== HEADER =====
+  slide6.addShape(pptx.ShapeType.rect, {
+    x: cardX,
+    y: qualCardStartY,
+    w: qualCardW,
+    h: HEADER_H,
+    fill: { color: "1F73E8" },
+    line: { color: "1F73E8", pt: 0 },
   });
 
-  const qualCardW = 5.9;
-  const qualCardStartY = 1.4;
-  const qualCardGap = 0.3;
-  const qualStartX = 0.4;
+  // ===== HEADER TEXT =====
+  slide6.addText(card.header, {
+    x: cardX + 0.12,
+    y: qualCardStartY + 0.07,
+    w: qualCardW - 0.25,
+    h: 0.18,
+    fontFace: "Segoe UI",
+    fontSize: 13,
+    color: "FFFFFF",
+    margin: 0,
+  });
 
-  const qualCards = [
-    {
-      header: "Perceived areas of strength",
-      description: "You are perceived as operating across boundaries with credibility - colleagues describe this as your most distinctive contribution.",
-      bullets: [
-        "Seen as bringing the right stakeholders in early, which is felt to reduce rework and accelerate decisions.",
-        "Perceived as trusted across functions, including on difficult topics.",
-        "Experienced as setting direction with clarity - colleagues note they leave meetings clear on what was agreed and who owns what.",
-        "Described as thinking at the system level, not only within your own area.",
-      ],
-    },
-    {
-      header: "Perceived areas of improvement",
-      description: "Your support is perceived as genuine but reactive. Development of others appears to be the clearest opportunity for improvement.",
-      bullets: [
-        "Feedback is felt to follow a request rather than being offered proactively.",
-        "Recognised potential is not always seen as translated into a clear stretch or development plan.",
-        "Priorities are perceived as set clearly, but follow-through on standards is reported as less visible.",
-        "Low-value work is seen as continuing past its useful life.",
-      ],
-    },
-  ];
+  // ===== DESCRIPTION =====
+  slide6.addText(card.description, {
+    x: cardX + 0.16,
+    y: qualCardStartY + 0.58,
+    w: qualCardW - 0.35,
+    h: 0.55,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "222222",
+    breakLine: true,
+    margin: 0,
+    valign: "top",
+  });
 
-  qualCards.forEach((card, idx) => {
-    const cardX = qualStartX + idx * (qualCardW + qualCardGap);
-    const HEADER_H = 0.45;
-    const BODY_H = 5.3;
+  // ===== BULLETS =====
+  let bulletY = qualCardStartY + 1.55;
 
-    // Header (Blue)
-    slide6.addShape(pptx.ShapeType.rect, {
-      x: cardX, y: qualCardStartY, w: qualCardW, h: HEADER_H,
-      fill: { color: "1E56DB" }, line: { color: "1E56DB", pt: 0 }
-    });
+  card.bullets.forEach((bullet) => {
 
-    slide6.addText(card.header, {
-      x: cardX + 0.15, y: qualCardStartY, w: qualCardW - 0.3, h: HEADER_H,
-      fontFace: "Segoe UI", fontSize: 13, bold: true, color: "FFFFFF",
-      valign: "middle", align: "left", margin: 0,
-    });
-
-    // Body (Gray)
-    slide6.addShape(pptx.ShapeType.rect, {
-      x: cardX, y: qualCardStartY + HEADER_H, w: qualCardW, h: BODY_H,
-      fill: { color: "F2F2F2" }, line: { color: "F2F2F2", pt: 0 }
-    });
-
-    // Content: Paragraph then bullets
-    const bulletText = card.bullets.map((b) => "•  " + b).join("\n\n");
-    const fullContent = card.description + "\n\n" + bulletText;
-
-    slide6.addText(fullContent, {
+    // Bullet dot
+    slide6.addText("•", {
       x: cardX + 0.15,
-      y: qualCardStartY + HEADER_H + 0.2,
-      w: qualCardW - 0.3,
-      h: BODY_H - 0.4,
+      y: bulletY + 0.01,
+      w: 0.1,
+      h: 0.1,
       fontFace: "Segoe UI",
-      fontSize: 10.5,
+      fontSize: 10,
       color: "111111",
-      valign: "top",
-      breakLine: true,
       margin: 0,
     });
-  });
 
- 
+    // Bullet text
+    slide6.addText(bullet, {
+      x: cardX + 0.38,
+      y: bulletY,
+      w: qualCardW - 0.65,
+      h: 0.48,
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "222222",
+      breakLine: true,
+      margin: 0,
+      valign: "top",
+    });
+
+    bulletY += 0.72;
+  });
+});
+
+// ================= ADDITIONAL DETAIL =================
+slide6.addText("Additional detail in appendix", {
+  x: 0.2,
+  y: 5.95,
+  w: 2.5,
+  h: 0.16,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  color: "222222",
+  margin: 0,
+});
+
+
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide6,
+  pptx,
+  participantName,
+  footerDate,
+  8,
+  10.80,
+  7.10,
+  2.30,
+  0.28
+);
   //////////////////////////////////////////////////////
   // SLIDE 7 — COACHING QUADRANT (commented out for now)
   //////////////////////////////////////////////////////
@@ -1082,6 +1359,7 @@ slide3.addText("PARTICIPANT NAME & DATE", {
 
   const slideScoreCalc = pptx.addSlide();
   slideScoreCalc.background = { color: "FFFFFF" };
+  addLogoToSlide(slideScoreCalc, false);
 
   slideScoreCalc.addText("How the score is calculated", {
     x: 0.38, y: 0.2, w: 9, h: 0.6,
@@ -1180,14 +1458,7 @@ slide3.addText("PARTICIPANT NAME & DATE", {
   });
 
   // Footer for Score Calc
-  slideScoreCalc.addShape(pptx.ShapeType.rect, {
-    x: 10.4, y: 7.2, w: 2.5, h: 0.3,
-    fill: { color: "FFFFFF" }, line: { color: "B00000", pt: 1 },
-  });
-  slideScoreCalc.addText(`${form.responses[0]?.participant?.fullName || "PARTICIPANT"} & ${new Date().toLocaleDateString()}`, {
-    x: 10.45, y: 7.25, w: 2.4, h: 0.2,
-    fontFace: "Segoe UI", fontSize: 7, color: "B00000", bold: true, align: "center",
-  });
+  addFooterToSlide(slideScoreCalc, pptx, participantName, footerDate, 9, 10.80, 7.10, 2.30, 0.28);
 
   //////////////////////////////////////////////////////
   // APPENDIX — FAQ
@@ -1195,6 +1466,7 @@ slide3.addText("PARTICIPANT NAME & DATE", {
 
   const slideFAQ = pptx.addSlide();
   slideFAQ.background = { color: "FFFFFF" };
+  addLogoToSlide(slideFAQ, false);
 
   slideFAQ.addText("FAQ", {
     x: 0.38, y: 0.2, w: 9, h: 0.8,
@@ -1273,16 +1545,1494 @@ slide3.addText("PARTICIPANT NAME & DATE", {
   });
 
   // Footer for FAQ
-  slideFAQ.addShape(pptx.ShapeType.rect, {
-    x: 10.4, y: 7.2, w: 2.5, h: 0.3,
-    fill: { color: "FFFFFF" }, line: { color: "B00000", pt: 1 },
-  });
-  slideFAQ.addText(`${form.responses[0]?.participant?.fullName || "PARTICIPANT"} & ${new Date().toLocaleDateString()}`, {
-    x: 10.45, y: 7.25, w: 2.4, h: 0.2,
-    fontFace: "Segoe UI", fontSize: 7, color: "B00000", bold: true, align: "center",
+  addFooterToSlide(slideFAQ, pptx, participantName, footerDate, 10, 10.80, 7.10, 2.30, 0.28);
+
+
+  // -----------------------------------------------------------
+
+
+const slide11 = pptx.addSlide();
+
+slide11.background = { color: "F2F2F2" };
+addLogoToSlide(slide11, false);
+
+// ================= TITLE =================
+slide11.addText(`“${verbatimQuotesData.title}”`, {
+  x: 0.35,
+  y: 0.25,
+  w: 7.8,
+  h: 0.9,
+  fontFace: "Segoe UI",
+  fontSize: 30,
+  color: "222222",
+  margin: 0,
+});
+
+// ================= SECTION TAG =================
+slide11.addShape(pptx.ShapeType.roundRect, {
+  x: 8.85, // moved right
+  y: 0.25,
+  w: 2.15,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "7A7A7A" },
+  line: { color: "7A7A7A" },
+});
+
+slide11.addText(verbatimQuotesData.section, {
+  x: 8.9, // moved right
+  y: 0.32,
+  w: 2.05,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+
+// ================= QUOTES =================
+let yPos = 1.4;
+
+verbatimQuotesData.quotes.forEach((quote) => {
+  slide11.addText(`• ${quote}`, {
+    x: 0.5,
+    y: yPos,
+    w: 11,
+    h: 0.5,
+    fontFace: "Segoe UI",
+    fontSize: 15,
+    color: "333333",
+    margin: 0,
+    breakLine: true,
+    valign: "top",
   });
 
-  //////////////////////////////////////////////////////
+  yPos += 0.72;
+});
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide11,
+  pptx,
+  participantName,
+  footerDate,
+  11,
+10.80, 7.10, 2.30, 0.28
+);
+
+// ---------------------------------------------------------------------
+
+const slide12 = pptx.addSlide();
+
+slide12.background = { color: "F2F2F2" };
+addLogoToSlide(slide12, false);
+
+// ================= TITLE =================
+// ================= TITLE =================
+slide12.addText(`“${positiveImpactData.title}”`, {
+  x: 0.4,
+  y: 0.28,
+  w: 7.2, // reduced width
+  h: 1,
+  fontFace: "Segoe UI",
+  fontSize: 29,
+  color: "222222",
+  margin: 0,
+  breakLine: true,
+});
+
+// ================= SECTION TAG =================
+slide12.addShape(pptx.ShapeType.roundRect, {
+  x: 8.85, // moved right
+  y: 0.25,
+  w: 2.15,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "7A7A7A" },
+  line: { color: "7A7A7A" },
+});
+
+slide12.addText(positiveImpactData.section, {
+  x: 8.9, // moved right
+  y: 0.32,
+  w: 2.05,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+// ================= QUOTES =================
+let yPoss = 1.7;
+
+positiveImpactData.quotes.forEach((quote) => {
+  slide12.addText(`• ${quote}`, {
+    x: 0.52,
+    y: yPoss,
+    w: 11.1,
+    h: 0.32,
+    fontFace: "Segoe UI",
+    fontSize: 14,
+    color: "333333",
+    margin: 0,
+    breakLine: true,
+    valign: "top",
+  });
+
+  yPoss += 0.5;
+});
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide12,
+  pptx,
+  participantName,
+  footerDate,
+  12,
+  10.80,
+  7.10,
+  2.30,
+  0.28
+);
+
+// ------------------------------------------------------------
+
+
+const slide13 = pptx.addSlide();
+
+slide13.background = { color: "F2F2F2" };
+addLogoToSlide(slide13, false);
+
+// ================= TITLE =================
+slide13.addText(`“${leadershipImpactData.title}”`, {
+  x: 0.35,
+  y: 0.22,
+  w: 7.8,
+  h: 1,
+  fontFace: "Segoe UI",
+  fontSize: 29,
+  color: "222222",
+  margin: 0,
+  breakLine: true,
+});
+
+// ================= SECTION TAG =================
+slide13.addShape(pptx.ShapeType.roundRect, {
+  x: 8.85, // moved right
+  y: 0.25,
+  w: 2.15,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "7A7A7A" },
+  line: { color: "7A7A7A" },
+});
+
+slide13.addText(leadershipImpactData.section, {
+  x: 8.9, // moved right
+  y: 0.32,
+  w: 2.05,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+// ================= QUOTES =================
+let yPo = 1.55;
+
+leadershipImpactData.quotes.forEach((quote) => {
+  slide13.addText(`• ${quote}`, {
+    x: 0.45,
+    y: yPo,
+    w: 11.1,
+    h: 0.32,
+    fontFace: "Segoe UI",
+    fontSize: 14,
+    color: "333333",
+    margin: 0,
+    breakLine: true,
+    valign: "top",
+  });
+
+  yPo += 0.52;
+});
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide13,
+  pptx,
+  participantName,
+  footerDate,
+  13,
+  10.80,
+  7.10,
+  2.30,
+  0.28
+);
+
+// -------------------------------------------------------------
+
+
+
+const slide14 = pptx.addSlide();
+
+slide14.background = { color: "F2F2F2" };
+addLogoToSlide(slide14, false);
+
+// ================= TITLE =================
+slide14.addText(`“${personalDevelopmentPlanData.title}”`, {
+  x: 0.35,
+  y: 0.22,
+  w: 7.8,
+  h: 1,
+  fontFace: "Segoe UI",
+  fontSize: 29,
+  color: "222222",
+  margin: 0,
+  breakLine: true,
+});
+
+// ================= SECTION TAG =================
+slide14.addShape(pptx.ShapeType.roundRect, {
+  x: 8.85, // moved right
+  y: 0.25,
+  w: 2.15,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "C40000" },
+  line: { color: "C40000" },
+});
+
+slide14.addText(personalDevelopmentPlanData.section, {
+  x: 8.9, // moved right
+  y: 0.32,
+  w: 2.05,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+
+// ================= PROFESSIONAL GOALS HEADER =================
+slide14.addShape(pptx.ShapeType.rect, {
+  x: 0.12,
+  y: 1.25,
+  w: 11.2,
+  h: 0.3,
+  fill: { color: "102B46" },
+  line: { color: "102B46" },
+});
+
+slide14.addText(
+  [
+    {
+      text: "Professional Goals ",
+      options: { bold: true }
+    },
+    {
+      text:
+        "What outcomes do you want to deliver over the next 12 months?",
+      options: { italic: true }
+    }
+  ],
+  {
+    x: 0.2,
+    y: 1.3,
+    w: 7,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "FFFFFF",
+    margin: 0,
+  }
+);
+
+// ================= PROFESSIONAL GOALS TABLE =================
+slide14.addTable(
+  [
+    [
+      {
+        text: "Within your BU or Function",
+        options: { bold: true }
+      },
+      {
+        text: "Across the Organization",
+        options: { bold: true }
+      }
+    ],
+
+    [
+      {
+        text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}`
+      },
+      {
+        text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}`
+      }
+    ],
+
+    [
+      {
+        text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}`
+      },
+      {
+        text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}`
+      }
+    ],
+
+    [
+      {
+        text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}`
+      },
+      {
+        text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}`
+      }
+    ]
+  ],
+  {
+    x: 0.12,
+    y: 1.55,
+    w: 11.2,
+    h: 1,
+
+    border: {
+      type: "solid",
+      pt: 1,
+      color: "8A8A8A"
+    },
+
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "333333",
+
+    fill: {
+  color: "F2F2F2"
+},
+
+    margin: 0.08,
+
+    colW: [5.5, 5.7]
+  }
+);
+
+// ================= BEHAVIOR DEVELOPMENT HEADER =================
+slide14.addShape(pptx.ShapeType.rect, {
+  x: 0.12,
+  y: 3.05,
+  w: 11.2,
+  h: 0.3,
+  fill: { color: "102B46" },
+  line: { color: "102B46" },
+});
+
+slide14.addText(
+  [
+    {
+      text: "Behavior Development ",
+      options: { bold: true }
+    },
+    {
+      text:
+        "Pick two or three behaviors to build. What does success look like, and how will you know?",
+      options: { italic: true }
+    }
+  ],
+  {
+    x: 0.2,
+    y: 3.1,
+    w: 9,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "FFFFFF",
+    margin: 0,
+  }
+);
+
+// ================= BEHAVIOR TABLE =================
+slide14.addTable(
+  [
+    personalDevelopmentPlanData.behaviorDevelopment.headers,
+
+    ...personalDevelopmentPlanData.behaviorDevelopment.rows
+  ],
+  {
+    x: 0.12,
+    y: 3.35,
+    w: 11.2,
+    h: 1.3,
+
+    border: {
+      type: "solid",
+      pt: 1,
+      color: "8A8A8A"
+    },
+
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "333333",
+
+   fill: {
+  color: "F2F2F2"
+},
+
+    margin: 0.08,
+
+    colW: [1.65, 3.6, 5.95]
+  }
+);
+
+// ================= ACTION PLAN HEADER =================
+slide14.addShape(pptx.ShapeType.rect, {
+  x: 0.12,
+  y: 5.05,
+  w: 5.6,
+  h: 0.3,
+  fill: { color: "102B46" },
+  line: { color: "102B46" },
+});
+
+slide14.addText(
+  [
+    {
+      text: "Action Plan ",
+      options: { bold: true }
+    },
+    {
+      text:
+        "What will you do in the next 30 days to start building these behaviors?",
+      options: { italic: true }
+    }
+  ],
+  {
+    x: 0.2,
+    y: 5.1,
+    w: 5.2,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 9,
+    color: "FFFFFF",
+    margin: 0,
+  }
+);
+
+// ================= STAKEHOLDER HEADER =================
+slide14.addShape(pptx.ShapeType.rect, {
+  x: 5.72,
+  y: 5.05,
+  w: 5.6,
+  h: 0.3,
+  fill: { color: "102B46" },
+  line: { color: "102B46" },
+});
+
+slide14.addText(
+  [
+    {
+      text: "Stakeholders & Support ",
+      options: { bold: true }
+    },
+    {
+      text:
+        "Who do you need to engage, and what help will you ask for?",
+      options: { italic: true }
+    }
+  ],
+  {
+    x: 5.82,
+    y: 5.1,
+    w: 5.1,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 9,
+    color: "FFFFFF",
+    margin: 0,
+  }
+);
+
+// ================= ACTION / STAKEHOLDER TABLE =================
+slide14.addTable(
+  [
+    [
+      personalDevelopmentPlanData.actionPlan.items[0],
+      personalDevelopmentPlanData.stakeholders.items[0]
+    ]
+  ],
+  {
+    x: 0.12,
+    y: 5.35,
+    w: 11.2,
+    h: 0.5,
+
+    border: {
+      type: "solid",
+      pt: 1,
+      color: "8A8A8A"
+    },
+
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "333333",
+
+    fill: {
+  color: "F2F2F2"
+},
+
+    margin: 0.08,
+
+    colW: [5.6, 5.6]
+  }
+);
+
+
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide14,
+  pptx,
+  participantName,
+  footerDate,
+  14,
+10.80, 7.10, 2.30, 0.28
+);
+
+// --------------------------------------------------------------
+
+
+
+const slide15 = pptx.addSlide();
+
+slide15.background = { color: "F2F2F2" };
+addLogoToSlide(slide15, false);
+
+// ================= TITLE =================
+slide15.addText(verbatimThemesData.title, {
+  x: 0.25,
+  y: 0.18,
+  w: 4,
+  h: 0.5,
+  fontFace: "Segoe UI",
+  fontSize: 28,
+  color: "222222",
+  margin: 0,
+});
+
+// ================= SECTION TAG =================
+slide15.addShape(pptx.ShapeType.roundRect, {
+  x: 8.85, // moved right
+  y: 0.25,
+  w: 2.15,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "C40000" },
+  line: { color: "C40000" },
+});
+
+slide15.addText(verbatimThemesData.section, {
+  x: 8.9, // moved right
+  y: 0.32,
+  w: 2.05,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+
+// ================= THEME CARD FUNCTION =================
+const addThemeCard = (
+  slide: any,
+  theme: any,
+  x: number,
+  y: number
+) => {
+  // Card background
+  slide.addShape(pptx.ShapeType.roundRect, {
+    x,
+    y,
+    w: 5.35,
+    h: 2.35,
+    rectRadius: 0.06,
+    fill: { color: "D9D9DF" },
+    line: { color: "D9D9DF" },
+  });
+
+  // Header
+  slide.addShape(pptx.ShapeType.rect, {
+    x,
+    y,
+    w: 5.35,
+    h: 0.55,
+    fill: { color: theme.headerColor },
+    line: { color: theme.headerColor },
+  });
+
+  // Theme title
+  slide.addText(theme.title, {
+    x: x + 0.2,
+    y: y + 0.16,
+    w: 2.7,
+    h: 0.2,
+    fontFace: "Segoe UI",
+    fontSize: 13,
+    bold: true,
+    color: "FFFFFF",
+    margin: 0,
+  });
+
+  // Rating pill
+  slide.addShape(pptx.ShapeType.roundRect, {
+    x: x + 3.45,
+    y: y + 0.12,
+    w: 1.75,
+    h: 0.28,
+    rectRadius: 0.08,
+    fill: { color: "FFFFFF" },
+    line: { color: "FFFFFF" },
+  });
+
+  slide.addText(theme.rating, {
+    x: x + 3.55,
+    y: y + 0.18,
+    w: 1.5,
+    h: 0.1,
+    fontFace: "Segoe UI",
+    fontSize: 9,
+    bold: true,
+    color: theme.headerColor,
+    align: "center",
+    margin: 0,
+  });
+
+  // Linked behaviors
+  slide.addText(theme.linkedBehaviors, {
+    x: x + 0.22,
+    y: y + 0.68,
+    w: 4.9,
+    h: 0.35,
+    fontFace: "Segoe UI",
+    fontSize: 7,
+    italic: true,
+    color: "6B7280",
+    margin: 0,
+  });
+
+  // Quote 1 bar
+  slide.addShape(pptx.ShapeType.rect, {
+    x: x + 0.18,
+    y: y + 1.02,
+    w: 0.04,
+    h: 0.42,
+    fill: { color: theme.headerColor },
+    line: { color: theme.headerColor },
+  });
+
+  // Quote 1
+  slide.addText(theme.quotes[0], {
+    x: x + 0.32,
+    y: y + 1.05,
+    w: 4.7,
+    h: 0.45,
+    fontFace: "Segoe UI",
+    fontSize: 11,
+    italic: true,
+    color: "333333",
+    margin: 0,
+    breakLine: true,
+  });
+
+  // Quote 2 bar
+  slide.addShape(pptx.ShapeType.rect, {
+    x: x + 0.18,
+    y: y + 1.65,
+    w: 0.04,
+    h: 0.42,
+    fill: { color: theme.headerColor },
+    line: { color: theme.headerColor },
+  });
+
+  // Quote 2
+  slide.addText(theme.quotes[1], {
+    x: x + 0.32,
+    y: y + 1.68,
+    w: 4.7,
+    h: 0.45,
+    fontFace: "Segoe UI",
+    fontSize: 11,
+    italic: true,
+    color: "333333",
+    margin: 0,
+    breakLine: true,
+  });
+};
+
+// ================= CARDS =================
+addThemeCard(slide15, verbatimThemesData.themes[0], 0.12, 1.2);
+addThemeCard(slide15, verbatimThemesData.themes[1], 5.95, 1.2);
+addThemeCard(slide15, verbatimThemesData.themes[2], 0.12, 3.65);
+addThemeCard(slide15, verbatimThemesData.themes[3], 5.95, 3.65);
+
+// ================= FOOTNOTE =================
+slide15.addText(verbatimThemesData.footerNote, {
+  x: 2.25,
+  y: 6.1,
+  w: 7,
+  h: 0.2,
+  fontFace: "Segoe UI",
+  fontSize: 7,
+  italic: true,
+  color: "6B7280",
+  align: "center",
+  margin: 0,
+});
+
+
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide15,
+  pptx,
+  participantName,
+  footerDate,
+  15,
+10.80, 7.10, 2.30, 0.28
+);
+
+// --------------------------------------------------------------------
+
+
+
+const slide16 = pptx.addSlide();
+
+slide16.background = { color: "F2F2F2" };
+addLogoToSlide(slide16, false);
+
+// ================= TITLE =================
+slide16.addText(coachingQuadrantData.title, {
+  x: 0.28,
+  y: 0.18,
+  w: 5.5,
+  h: 0.5,
+  fontFace: "Segoe UI",
+  fontSize: 28,
+  color: "222222",
+  margin: 0,
+});
+
+// ================= SECTION TAG =================
+slide16.addShape(pptx.ShapeType.roundRect, {
+   x: 8.85, // moved right
+  y: 0.25,
+  w: 2.15,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "C40000" },
+  line: { color: "C40000" },
+});
+
+slide16.addText(coachingQuadrantData.section, {
+  x: 8.9, // moved right
+  y: 0.32,
+  w: 2.05,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+
+// ================= QUADRANT FUNCTION =================
+const addQuadrant = (
+  slide: any,
+  quadrant: any,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) => {
+
+  // Background
+  slide.addShape(pptx.ShapeType.rect, {
+    x,
+    y,
+    w,
+    h,
+    fill: { color: quadrant.bgColor },
+    line: { color: "BFBFBF", pt: 1 },
+  });
+
+  // Title
+  slide.addText(quadrant.title, {
+    x: x + 0.08,
+    y: y + 0.12,
+    w: w - 0.2,
+    h: 0.2,
+    fontFace: "Segoe UI",
+    fontSize: 16,
+    bold: false,
+    color: "222222",
+    margin: 0,
+  });
+
+  // Subtitle
+  slide.addText(quadrant.subtitle, {
+    x: x + 0.08,
+    y: y + 0.48,
+    w: w - 0.2,
+    h: 0.35,
+    fontFace: "Segoe UI",
+    fontSize: 11,
+    bold: true,
+    color: "0066E6",
+    margin: 0,
+    breakLine: true,
+  });
+
+  // Bullet Items
+  let itemY = y + 1.0;
+
+  quadrant.items.forEach((item: string) => {
+    slide.addText(`• ${item}`, {
+      x: x + 0.08,
+      y: itemY,
+      w: w - 0.3,
+      h: 0.28,
+      fontFace: "Segoe UI",
+      fontSize: 11,
+      color: "222222",
+      margin: 0,
+      breakLine: true,
+    });
+
+    itemY += 0.42;
+  });
+};
+
+// ================= QUADRANTS =================
+addQuadrant(
+  slide16,
+  coachingQuadrantData.quadrants[0],
+  0.45,
+  1.35,
+  4.45,
+  2.15
+);
+
+addQuadrant(
+  slide16,
+  coachingQuadrantData.quadrants[1],
+  4.9,
+  1.35,
+  4.45,
+  2.15
+);
+
+addQuadrant(
+  slide16,
+  coachingQuadrantData.quadrants[2],
+  0.45,
+  3.5,
+  4.45,
+  2.15
+);
+
+addQuadrant(
+  slide16,
+  coachingQuadrantData.quadrants[3],
+  4.9,
+  3.5,
+  4.45,
+  2.15
+);
+
+// ================= SIDE LABELS =================
+slide16.addText("You don’t consider consistent", {
+  x: -0.32,
+  y: 1.75,
+  w: 1.2,
+  h: 0.2,
+  rotate: 270,
+  fontFace: "Segoe UI",
+  fontSize: 9,
+  color: "222222",
+  align: "center",
+  margin: 0,
+});
+
+slide16.addText("You consider consistent", {
+  x: -0.32,
+  y: 3.95,
+  w: 1.2,
+  h: 0.2,
+  rotate: 270,
+  fontFace: "Segoe UI",
+  fontSize: 9,
+  color: "222222",
+  align: "center",
+  margin: 0,
+});
+// ================= BOTTOM LABELS =================
+slide16.addText("Colleagues see it consistently", {
+  x: 1.6,
+  y: 5.95,
+  w: 2.2,
+  h: 0.2,
+  fontFace: "Segoe UI",
+  fontSize: 11,
+  color: "222222",
+  align: "center",
+  margin: 0,
+});
+
+slide16.addText("Colleagues don’t see it consistently", {
+  x: 5.5,
+  y: 5.95,
+  w: 3,
+  h: 0.2,
+  fontFace: "Segoe UI",
+  fontSize: 11,
+  color: "222222",
+  align: "center",
+  margin: 0,
+});
+
+
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide16,
+  pptx,
+  participantName,
+  footerDate,
+  16,
+10.80, 7.10, 2.30, 0.28
+);
+
+// -------------------------------------------------------------------
+
+
+
+const slide17 = pptx.addSlide();
+
+slide17.background = { color: "F2F2F2" };
+addLogoToSlide(slide17, false);
+
+// ================= TITLE =================
+slide17.addText(resultsAtGlanceData.title, {
+  x: 0.35,
+  y: 0.22,
+  w: 4.8,
+  h: 0.45,
+  fontFace: "Segoe UI",
+  fontSize: 30,
+  color: "222222",
+  margin: 0,
+});
+
+// ================= SUBTITLE =================
+slide17.addText(resultsAtGlanceData.subtitle, {
+  x: 0.38,
+  y: 0.86,
+  w: 5.5,
+  h: 0.2,
+  fontFace: "Segoe UI",
+  fontSize: 14,
+  color: "20354B",
+  margin: 0,
+});
+
+// ================= BLUE TAG =================
+slide17.addShape(pptx.ShapeType.roundRect, {
+  x: 5.7,
+  y: 0.18,
+  w: 2.15,
+  h: 0.42,
+  rectRadius: 0.05,
+  fill: { color: "1F73E8" },
+  line: { color: "1F73E8" },
+});
+
+slide17.addText(resultsAtGlanceData.sectionLeft, {
+  x: 5.82,
+  y: 0.25,
+  w: 1.9,
+  h: 0.2,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+  breakLine: true,
+});
+
+// ================= GREY TAG =================
+slide17.addShape(pptx.ShapeType.roundRect, {
+  x: 8.45,
+  y: 0.08,
+  w: 2.35,
+  h: 0.5,
+  rectRadius: 0.05,
+  fill: { color: "7A7A7A" },
+  line: { color: "7A7A7A" },
+});
+
+slide17.addText(resultsAtGlanceData.sectionRight, {
+  x: 8.58,
+  y: 0.16,
+  w: 2.05,
+  h: 0.22,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+  breakLine: true,
+});
+
+// ================= MAIN TABLE HEADERS =================
+slide17.addShape(pptx.ShapeType.rect, {
+  x: 0.3,
+  y: 1.25,
+  w: 2.55,
+  h: 0.32,
+  fill: { color: "24979B" },
+  line: { color: "24979B" },
+});
+
+slide17.addText("Participant information", {
+  x: 0.38,
+  y: 1.33,
+  w: 1.8,
+  h: 0.12,
+  fontFace: "Segoe UI",
+  fontSize: 11,
+  bold: true,
+  color: "FFFFFF",
+  margin: 0,
+});
+
+slide17.addShape(pptx.ShapeType.rect, {
+  x: 2.98,
+  y: 1.25,
+  w: 5.75,
+  h: 0.32,
+  fill: { color: "24979B" },
+  line: { color: "24979B" },
+});
+
+slide17.addText("What the feedback suggests", {
+  x: 3.08,
+  y: 1.33,
+  w: 2.5,
+  h: 0.12,
+  fontFace: "Segoe UI",
+  fontSize: 11,
+  bold: true,
+  color: "FFFFFF",
+  margin: 0,
+});
+
+slide17.addShape(pptx.ShapeType.rect, {
+  x: 8.73,
+  y: 1.25,
+  w: 2.4,
+  h: 0.32,
+  fill: { color: "24979B" },
+  line: { color: "24979B" },
+});
+
+slide17.addText("What to do", {
+  x: 8.83,
+  y: 1.33,
+  w: 1.3,
+  h: 0.12,
+  fontFace: "Segoe UI",
+  fontSize: 11,
+  bold: true,
+  color: "FFFFFF",
+  margin: 0,
+});
+
+// ================= PARTICIPANT INFO BOX =================
+slide17.addShape(pptx.ShapeType.rect, {
+  x: 0.3,
+  y: 1.57,
+  w: 2.55,
+  h: 4.4,
+  fill: { color: "F2F2F2" },
+  line: { color: "BFDCDC", pt: 1 },
+});
+
+// Labels
+slide17.addText("Name", {
+  x: 0.4,
+  y: 1.72,
+  w: 0.8,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  color: "333333",
+});
+
+slide17.addText("Reporting\nperiod", {
+  x: 0.4,
+  y: 2.15,
+  w: 0.8,
+  h: 0.35,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  color: "333333",
+});
+
+slide17.addText("Response\nrate", {
+  x: 0.4,
+  y: 2.7,
+  w: 0.8,
+  h: 0.35,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  color: "333333",
+});
+
+// Values
+slide17.addText(resultsAtGlanceData.participantInfo.name, {
+  x: 1.35,
+  y: 1.72,
+  w: 1.2,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "222222",
+});
+
+slide17.addText(resultsAtGlanceData.participantInfo.reportingPeriod, {
+  x: 1.35,
+  y: 2.15,
+  w: 1.2,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "222222",
+});
+
+slide17.addText(resultsAtGlanceData.participantInfo.responseRate, {
+  x: 1.35,
+  y: 2.72,
+  w: 1.2,
+  h: 0.15,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "222222",
+});
+
+// Divider
+slide17.addShape(pptx.ShapeType.line, {
+  x: 1.25,
+  y: 1.57,
+  w: 0,
+  h: 1.55,
+  line: {
+    color: "D0D0D0",
+    pt: 1
+  }
+});
+
+// Confidential text
+slide17.addText(
+  resultsAtGlanceData.participantInfo.confidentialityText,
+  {
+    x: 0.4,
+    y: 3.45,
+    w: 2,
+    h: 1.2,
+    fontFace: "Segoe UI",
+    fontSize: 8,
+    color: "666666",
+    breakLine: true,
+    margin: 0,
+  }
+);
+
+slide17.addText(
+  resultsAtGlanceData.participantInfo.anonymityText,
+  {
+    x: 0.4,
+    y: 4.85,
+    w: 2,
+    h: 1.1,
+    fontFace: "Segoe UI",
+    fontSize: 8,
+    color: "666666",
+    breakLine: true,
+    margin: 0,
+  }
+);
+
+// ================= FEEDBACK TABLE =================
+const rowHeights = [1.0, 1.0, 1.0, 1.15];
+
+let currentY = 1.57;
+
+resultsAtGlanceData.feedbackSections.forEach(
+  (section, index) => {
+
+    const rowHeight = rowHeights[index];
+
+    // Row container
+    slide17.addShape(pptx.ShapeType.rect, {
+      x: 2.98,
+      y: currentY,
+      w: 8.15,
+      h: rowHeight,
+      fill: { color: "F2F2F2" },
+      line: { color: "BFDCDC", pt: 1 },
+    });
+
+    // Column dividers
+    slide17.addShape(pptx.ShapeType.line, {
+      x: 4.95,
+      y: currentY,
+      w: 0,
+      h: rowHeight,
+      line: {
+        color: "BFDCDC",
+        pt: 1
+      }
+    });
+
+    slide17.addShape(pptx.ShapeType.line, {
+      x: 8.73,
+      y: currentY,
+      w: 0,
+      h: rowHeight,
+      line: {
+        color: "BFDCDC",
+        pt: 1
+      }
+    });
+
+    // Left title
+    slide17.addText(section.title, {
+      x: 3.08,
+      y: currentY + 0.18,
+      w: 1.6,
+      h: 0.5,
+      fontFace: "Segoe UI",
+      fontSize: 11,
+      bold: true,
+      color: "20354B",
+      breakLine: true,
+      margin: 0,
+    });
+
+    // Middle bullets
+    let bulletY = currentY + 0.18;
+
+    section.points.forEach((point) => {
+      slide17.addText(`• ${point}`, {
+        x: 5.05,
+        y: bulletY,
+        w: 3.3,
+        h: 0.22,
+        fontFace: "Segoe UI",
+        fontSize: 10,
+        color: "20354B",
+        margin: 0,
+        breakLine: true,
+      });
+
+      bulletY += 0.22;
+    });
+
+    // Right action text
+    slide17.addText(section.action, {
+      x: 8.83,
+      y: currentY + 0.18,
+      w: 2.05,
+      h: rowHeight - 0.2,
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "333333",
+      breakLine: true,
+      margin: 0,
+    });
+
+    currentY += rowHeight;
+  }
+);
+
+
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide17,
+  pptx,
+  participantName,
+  footerDate,
+  17,
+10.80, 7.10, 2.30, 0.28
+);
+
+// --------------------------------------------------------------
+
+const slide18 = pptx.addSlide();
+
+slide18.background = { color: "111111" };
+addLogoToSlide(slide18, true);
+
+// ================= SECTION TAG =================
+slide18.addShape(pptx.ShapeType.roundRect, {
+  x: 8.62,
+  y: 0.28,
+  w: 2.2,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "D40000" },
+  line: { color: "D40000" },
+});
+
+slide18.addText("DRAFT FOR INPUT", {
+  x: 8.72,
+  y: 0.36,
+  w: 2.0,
+  h: 0.12,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+
+// ================= TITLE =================
+slide18.addText("APPENDIX", {
+  x: 0.55,
+  y: 3.65,
+  w: 3,
+  h: 0.45,
+  fontFace: "Segoe UI Light",
+  fontSize: 32,
+  color: "FFFFFF",
+  margin: 0,
+});
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide18,
+  pptx,
+  participantName,
+  footerDate,
+  18,
+  10.80,
+  7.10,
+  2.30,
+  0.28
+);
+
+// --------------------------------------------------------------
+
+const slide19 = pptx.addSlide();
+
+slide19.background = { color: "111111" };
+addLogoToSlide(slide19, true);
+
+// ================= SECTION TAG =================
+slide19.addShape(pptx.ShapeType.roundRect, {
+  x: 8.62,
+  y: 0.32,
+  w: 2.2,
+  h: 0.38,
+  rectRadius: 0.04,
+  fill: { color: "D40000" },
+  line: { color: "D40000" },
+});
+
+slide19.addText("DRAFT FOR INPUT", {
+  x: 8.72,
+  y: 0.40,
+  w: 2.0,
+  h: 0.12,
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  bold: true,
+  color: "FFFFFF",
+  align: "center",
+  margin: 0,
+});
+
+// ================= TITLE =================
+slide19.addText("SELECTIVE ADDITIONAL OUTPUTS", {
+  x: 0.55,
+  y: 3.78,
+  w: 7.5,
+  h: 0.5,
+  fontFace: "Segoe UI Light",
+  fontSize: 30,
+  color: "FFFFFF",
+  margin: 0,
+});
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide19,
+  pptx,
+  participantName,
+  footerDate,
+  19,
+  10.80,
+  7.10,
+  2.30,
+  0.28
+);
+// --------------------------------------------------------------
+
+const slide20 = pptx.addSlide();
+
+slide20.background = { color: "111111" };
+addLogoToSlide(slide20, true);
+
+// ================= TITLE =================
+slide20.addText("END", {
+  x: 0.55,
+  y: 5.05,
+  w: 2,
+  h: 0.45,
+  fontFace: "Segoe UI Light",
+  fontSize: 30,
+  color: "FFFFFF",
+  margin: 0,
+});
+
+// ================= FOOTER =================
+addFooterToSlide(
+  slide20,
+  pptx,
+  participantName,
+  footerDate,
+  20,
+  10.80,
+  7.10,
+  2.30,
+  0.28
+);
+  // //////////////////////////////////////////////////////
   // EXPORT
   //////////////////////////////////////////////////////
 
@@ -1307,3 +3057,4 @@ slide3.addText("PARTICIPANT NAME & DATE", {
     },
   });
 }
+
