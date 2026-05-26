@@ -268,9 +268,9 @@ export function createSlideHowCreated(params: SlideParams) {
   addLogoToSlide(slideHowCreated, true);
 
   // TITLES
-  slideHowCreated.addText("How this report was\ncreated", {
+  slideHowCreated.addText("How this report was created", {
     x: 0.5, y: 0.4, w: 8, h: 1.2,
-    fontFace: "Segoe UI", fontSize: 50, bold: false, color: "FFFFFF", margin: 0,
+    fontFace: "Segoe UI", fontSize: 40, bold: false, color: "FFFFFF", margin: 0,
   });
 
   // Blue banner notification (top right)
@@ -520,11 +520,19 @@ export function createSlideOverallResults(params: SlideParams) {
       fit: "shrink", margin: 0, breakLine: false,
     });
 
-    slide1.addShape(pptx.ShapeType.line, {
-      x: barX, y: currentY - 0.02, w: 0.001, h: 0.38,
-      line: { color: "8E8E8E", pt: 1 },
-    });
+slide1.addShape(pptx.ShapeType.rect, {
+  x: barX,
+  y: currentY - 0.01,
 
+  w: 0.008,
+  h: 0.42,
+
+  fill: { color: "9E9E9E" },
+  line: {
+    color: "9E9E9E",
+    pt: 0,
+  },
+});
     const BAR_MAX_W = 1.15;
     const barFillW = (item.rawAverage / 100) * BAR_MAX_W;
 
@@ -981,6 +989,7 @@ export function createSlideSelfOther(params: SlideParams) {
     fontSize: 12,
     color: "222222",
     margin: 0,
+    bold: true,
   });
 
   addFooterToSlide(slide5, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
@@ -999,9 +1008,11 @@ export function createSlideQualitativeFeedback(params: SlideParams) {
     w: 5.5,
     h: 0.45,
     fontFace: "Segoe UI Light",
+    bold:true,
     fontSize: 29,
     color: "111111",
     margin: 0,
+  
   });
 
   // SUBTITLE
@@ -1147,6 +1158,7 @@ export function createSlideQualitativeFeedback(params: SlideParams) {
     fontSize: 10,
     color: "222222",
     margin: 0,
+    bold: true,
   });
 
   addFooterToSlide(slide6, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
@@ -1481,7 +1493,7 @@ export function createSlideLeadershipImpact(params: SlideParams) {
 
   // TITLE
   slide13.addText(`“${leadershipImpactData.title}”`, {
-    x: 0.35,
+    x: 0.65,
     y: 0.22,
     w: 7.8,
     h: 1,
@@ -1547,7 +1559,7 @@ export function createSlidePDP(params: SlideParams) {
 
   // TITLE
   slide14.addText(`“${personalDevelopmentPlanData.title}”`, {
-    x: 0.35,
+    x: 0.65,
     y: 0.22,
     w: 7.8,
     h: 1,
@@ -1560,7 +1572,7 @@ export function createSlidePDP(params: SlideParams) {
 
   // SECTION TAG
   slide14.addShape(pptx.ShapeType.roundRect, {
-    x: 8.85,
+    x: 9.15,
     y: 0.25,
     w: 2.15,
     h: 0.38,
@@ -1570,7 +1582,7 @@ export function createSlidePDP(params: SlideParams) {
   });
 
   slide14.addText(personalDevelopmentPlanData.section, {
-    x: 8.9,
+    x: 9.2,
     y: 0.32,
     w: 2.05,
     h: 0.15,
@@ -1584,7 +1596,7 @@ export function createSlidePDP(params: SlideParams) {
 
   // PROFESSIONAL GOALS HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 0.12,
+    x: 0.42,
     y: 1.25,
     w: 11.2,
     h: 0.3,
@@ -1605,7 +1617,7 @@ export function createSlidePDP(params: SlideParams) {
       }
     ],
     {
-      x: 0.2,
+      x: 0.5,
       y: 1.3,
       w: 7,
       h: 0.15,
@@ -1655,7 +1667,7 @@ export function createSlidePDP(params: SlideParams) {
       ]
     ],
     {
-      x: 0.12,
+      x: 0.42,
       y: 1.55,
       w: 11.2,
       h: 1,
@@ -1677,7 +1689,7 @@ export function createSlidePDP(params: SlideParams) {
 
   // BEHAVIOR DEVELOPMENT HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 0.12,
+    x: 0.42,
     y: 3.05,
     w: 11.2,
     h: 0.3,
@@ -1698,7 +1710,7 @@ export function createSlidePDP(params: SlideParams) {
       }
     ],
     {
-      x: 0.2,
+      x: 0.5,
       y: 3.1,
       w: 9,
       h: 0.15,
@@ -1716,7 +1728,7 @@ export function createSlidePDP(params: SlideParams) {
       ...personalDevelopmentPlanData.behaviorDevelopment.rows
     ],
     {
-      x: 0.12,
+      x: 0.42,
       y: 3.35,
       w: 11.2,
       h: 1.3,
@@ -1738,7 +1750,7 @@ export function createSlidePDP(params: SlideParams) {
 
   // ACTION PLAN HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 0.12,
+    x: 0.42,
     y: 5.05,
     w: 5.6,
     h: 0.3,
@@ -1759,7 +1771,7 @@ export function createSlidePDP(params: SlideParams) {
       }
     ],
     {
-      x: 0.2,
+      x: 0.5,
       y: 5.1,
       w: 5.2,
       h: 0.15,
@@ -1772,7 +1784,7 @@ export function createSlidePDP(params: SlideParams) {
 
   // STAKEHOLDER HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 5.72,
+    x: 6.02,
     y: 5.05,
     w: 5.6,
     h: 0.3,
@@ -1793,7 +1805,7 @@ export function createSlidePDP(params: SlideParams) {
       }
     ],
     {
-      x: 5.82,
+      x: 6.12,
       y: 5.1,
       w: 5.1,
       h: 0.15,
@@ -1813,7 +1825,7 @@ export function createSlidePDP(params: SlideParams) {
       ]
     ],
     {
-      x: 0.12,
+      x: 0.42,
       y: 5.35,
       w: 11.2,
       h: 0.5,
@@ -2007,11 +2019,11 @@ export function createSlideVerbatimThemes(params: SlideParams) {
   });
 
   // CARDS
-  addThemeCard(pptx, slide15, verbatimThemesData.themes[0], 0.12, 1.2);
-  addThemeCard(pptx, slide15, verbatimThemesData.themes[1], 5.95, 1.2);
-  addThemeCard(pptx, slide15, verbatimThemesData.themes[2], 0.12, 3.65);
-  addThemeCard(pptx, slide15, verbatimThemesData.themes[3], 5.95, 3.65);
+addThemeCard(pptx, slide15, verbatimThemesData.themes[0], 0.35, 1.2);
+addThemeCard(pptx, slide15, verbatimThemesData.themes[1], 6.18, 1.2);
 
+addThemeCard(pptx, slide15, verbatimThemesData.themes[2], 0.35, 3.65);
+addThemeCard(pptx, slide15, verbatimThemesData.themes[3], 6.18, 3.65);
   // FOOTNOTE
   slide15.addText(verbatimThemesData.footerNote, {
     x: 2.25,
@@ -2247,11 +2259,11 @@ export function createSlideCoachingQuadrant(params: SlideParams) {
     color: "222222", bold: false, margin: 0,
   });
 
-  // Custom dotted underline under "at a glance"
-  slide17.addShape(pptx.ShapeType.line, {
-    x: 2.98, y: 0.72, w: 2.05, h: 0,
-    line: { color: "B8AA97", pt: 1.5, dashType: "dash" }
-  });
+  // // Custom dotted underline under "at a glance"
+  // slide17.addShape(pptx.ShapeType.line, {
+  //   x: 2.98, y: 0.72, w: 2.05, h: 0,
+  //   line: { color: "B8AA97", pt: 1.5, dashType: "dash" }
+  // });
 
   // Subtitle
   slide17.addText(resultsAtGlanceData.subtitle, {
@@ -2318,7 +2330,7 @@ export function createSlideCoachingQuadrant(params: SlideParams) {
     x: X_ACT + 0.12, y: TABLE_Y, w: ACT_W - 0.24, h: HEADER_H,
     fontFace: "Segoe UI", fontSize: 11, bold: true,
     color: "FFFFFF", valign: "middle", margin: 0,
-  });
+  }); 
 
   // ── PARTICIPANT INFO CARD ──────────────────────────────────────────────────
   // Outer Border Box
@@ -2518,6 +2530,7 @@ export function createSlideAppendixDivider(params: SlideParams) {
     fontSize: 32,
     color: "FFFFFF",
     margin: 0,
+    bold: true,
   });
 
   addFooterToSlide(slide18, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
@@ -2741,3 +2754,4 @@ export async function GET(req: NextRequest) {
     },
   });
 }
+
