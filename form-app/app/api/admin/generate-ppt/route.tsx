@@ -614,101 +614,186 @@ export async function GET(req: NextRequest) {
   //////////////////////////////////////////////////////
 
   const slide3 = pptx.addSlide();
-  slide3.background = { color: "F2F2F2" };
+slide3.background = { color: "FFFFFF" };
 
-  slide3.addText("Insufficient Exposures", {
-    x: 0.25, y: 0.05, w: 5.8, h: 0.55,
-    fontFace: "Segoe UI", fontSize: 28, color: "1A1A1A", bold: false, margin: 0,
-  });
+// ── Title ──────────────────────────────────────────────────────────────────
+slide3.addText("Insufficient Exposures", {
+  x: 0.25, y: 0.08, w: 8.0, h: 0.55,
+  fontFace: "Segoe UI", fontSize: 28, color: "1A1A1A", bold: false, margin: 0,
+});
 
-  slide3.addShape(pptx.ShapeType.rect, {
-    x: 0.15, y: 0.82, w: 7.1, h: 0.3,
-    fill: { color: "D0D0D0" }, line: { color: "D0D0D0" },
-  });
+// ── Ericsson logo placeholder (top-right) ──────────────────────────────────
+// (Add your logo image here if needed)
 
-  slide3.addText("Results", {
-    x: 0.22, y: 0.89, w: 1, h: 0.1,
-    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111", margin: 0,
-  });
+// ── Table constants ────────────────────────────────────────────────────────
+const TABLE_LEFT   = 0.25;   // left edge of table
+const TABLE_W      = 6.30;   // total table width
+const COL1_W       = 3.55;   // "Results" column width
+const COL2_W       = TABLE_W - COL1_W; // "Count" column width
+const COL2_X       = TABLE_LEFT + COL1_W;
+const HEADER_Y     = 0.72;
+// const HEADER_H     = 0.28;
+// const ROW_H        = 0.255;  // row height — 22 rows × 0.255 ≈ 5.6" fits in slide
+const DATA_START_Y = HEADER_Y + HEADER_H;
 
-  slide3.addText("Count of Insufficient Exposure", {
-    x: 4.15, y: 0.89, w: 2.4, h: 0.1,
-    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111", margin: 0,
-  });
+// ── Header row background ──────────────────────────────────────────────────
+slide3.addShape(pptx.ShapeType.rect, {
+  x: TABLE_LEFT, y: HEADER_Y, w: TABLE_W, h: HEADER_H,
+  fill: { color: "D0D0D0" }, line: { color: "D0D0D0" },
+});
 
-  let tableY = 1.05;
+// ── Header text ───────────────────────────────────────────────────────────
+slide3.addText("Results", {
+  x: TABLE_LEFT + 0.06, y: HEADER_Y, w: COL1_W, h: HEADER_H,
+  fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
+  margin: 0, valign: "middle", align: "left",
+});
 
-  const PIX_ROW_H = 0.20;
+slide3.addText("Count of Insufficient Exposure", {
+  x: COL2_X, y: HEADER_Y, w: COL2_W, h: HEADER_H,
+  fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
+  margin: 0, valign: "middle", align: "left",
+});
 
-  // Vertical Separator Line for the table
+// ── Vertical divider (full height: header + all rows) ─────────────────────
+slide3.addShape(pptx.ShapeType.line, {
+  x: COL2_X, y: HEADER_Y,
+  w: 0.001, h: HEADER_H + (analytics.length * ROW_H),
+  line: { color: "A0A0A0", pt: 0.75 },
+});
+
+// ── Outer border of entire table ──────────────────────────────────────────
+slide3.addShape(pptx.ShapeType.rect, {
+  x: TABLE_LEFT, y: HEADER_Y,
+  w: TABLE_W, h: HEADER_H + (analytics.length * ROW_H),
+  fill: { type: "none" }, line: { color: "B0B0B0", pt: 0.75 },
+});
+
+// ── Data rows ─────────────────────────────────────────────────────────────
+analytics.forEach((item, idx) => {
+  const count   = item.distribution["Insufficient Exposure"] || 0;
+  const rowY    = DATA_START_Y + idx * ROW_H;
+  const isEven  = idx % 2 === 0;
+
+  // Alternating very-light background for even rows (matches screenshot)
+  if (isEven) {
+    slide3.addShape(pptx.ShapeType.rect, {
+      x: TABLE_LEFT, y: rowY, w: TABLE_W, h: ROW_H,
+      fill: { color: "F9F9F9" }, line: { pt: 0 },
+    });
+  }
+
+  // Horizontal separator line
   slide3.addShape(pptx.ShapeType.line, {
-    x: 4.15, y: 0.82, w: 0.001, h: (analytics.length * PIX_ROW_H) + 0.3,
-    line: { color: "A0A0A0", pt: 1 }
+    x: TABLE_LEFT, y: rowY + ROW_H,
+    w: TABLE_W, h: 0.001,
+    line: { color: "D0D0D0", pt: 0.5 },
   });
 
-  analytics.forEach((item) => {
-    const count = item.distribution["Insufficient Exposure"] || 0;
+  // Row label
+  slide3.addText(item.question, {
+    x: TABLE_LEFT + 0.06, y: rowY + 0.01, w: COL1_W - 0.08, h: ROW_H - 0.02,
+    fontFace: "Segoe UI", fontSize: 7.8, color: "222222",
+    margin: 0, valign: "middle", fit: "shrink",
+  });
 
-    // slide3 — fix zero-height separator lines
-    slide3.addShape(pptx.ShapeType.line, {
-      x: 0.15, y: tableY + PIX_ROW_H, w: 7.1, h: 0.001,
-      line: { color: "C8C8C8", pt: 0.5 },
+  if (count === 0) {
+    // Zero: just show "0" left-aligned in the count column
+    slide3.addText("0", {
+      x: COL2_X + 0.08, y: rowY + 0.01, w: 0.5, h: ROW_H - 0.02,
+      fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
+      margin: 0, valign: "middle", align: "left",
+    });
+  } else {
+    // Bar: starts right after COL2_X with a small indent
+    const BAR_X      = COL2_X + 0.08;
+    const BAR_Y      = rowY + (ROW_H - 0.09) / 2; // vertically centered
+    const BAR_H      = 0.09;
+    const PX_PER_CNT = 0.38; // inches per unit count
+    const barW       = count * PX_PER_CNT;
+
+    slide3.addShape(pptx.ShapeType.rect, {
+      x: BAR_X, y: BAR_Y, w: barW, h: BAR_H,
+      fill: { color: "0055D4" }, line: { pt: 0 },
     });
 
-    slide3.addText(item.question, {
-      x: 0.22, y: tableY + 0.01, w: 3.8, h: 0.18,
-      fontFace: "Segoe UI", fontSize: 7.5, color: "333333", margin: 0, fit: "shrink",
+    slide3.addText(`${count}`, {
+      x: BAR_X + barW + 0.07, y: rowY + 0.01, w: 0.4, h: ROW_H - 0.02,
+      fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
+      margin: 0, valign: "middle", align: "left",
     });
+  }
+});
 
-    // Zero-state center count
-    if (count === 0) {
-      slide3.addText(`0`, {
-        x: 4.2, y: tableY + 0.01, w: 0.2, h: 0.18,
-        fontFace: "Segoe UI", fontSize: 8, color: "333333", margin: 0,
-        align: "center"
-      });
-    }
+// ── Note box ───────────────────────────────────────────────────────────────
+// Positioned bottom-right; top aligns roughly with row 13 (~mid-slide)
+const NOTE_X = 7.20;
+const NOTE_Y = 3.50;
+const NOTE_W = 5.85;  // reaches to slide right edge with margin
 
-    if (count > 0) {
-      const barWidth = count * 0.32;
-      slide3.addShape(pptx.ShapeType.rect, {
-        x: 4.18, y: tableY + 0.10, w: barWidth, h: 0.04,
-        fill: { color: "0055D4" }, line: { pt: 0 },
-      });
-      slide3.addText(`${count}`, {
-        x: 4.18 + barWidth + 0.04, y: tableY + 0.01, w: 0.3, h: 0.18,
-        fontFace: "Segoe UI", fontSize: 7.5, color: "333333", margin: 0,
-      });
-    }
+// "Note" header band
+slide3.addShape(pptx.ShapeType.rect, {
+  x: NOTE_X, y: NOTE_Y, w: NOTE_W, h: 0.30,
+  fill: { color: "9E9E9E" }, line: { color: "9E9E9E" },
+});
+slide3.addText("Note", {
+  x: NOTE_X + 0.10, y: NOTE_Y, w: 1.0, h: 0.30,
+  fontFace: "Segoe UI", fontSize: 9, bold: true, color: "FFFFFF",
+  margin: 0, valign: "middle",
+});
 
-    tableY += PIX_ROW_H;
-  });
+// Note body background
+const NOTE_BODY_Y = NOTE_Y + 0.30;
+const NOTE_BODY_H = 3.50;  // extends to bottom of content area
+slide3.addShape(pptx.ShapeType.rect, {
+  x: NOTE_X, y: NOTE_BODY_Y, w: NOTE_W, h: NOTE_BODY_H,
+  fill: { color: "F0F0F0" }, line: { color: "D0D0D0", pt: 0.5 },
+});
 
-  slide3.addShape(pptx.ShapeType.rect, {
-    x: 7.8, y: 3.95, w: 4.35, h: 0.3,
-    fill: { color: "A5A5A5" }, line: { color: "A5A5A5" },
-  });
-
-  slide3.addText("Note", {
-    x: 7.92, y: 4.02, w: 0.5, h: 0.1,
-    fontFace: "Segoe UI", fontSize: 9, bold: true, color: "FFFFFF", margin: 0,
-  });
-
-  slide3.addShape(pptx.ShapeType.rect, {
-    x: 7.8, y: 4.25, w: 4.35, h: 2.65,
-    fill: { color: "EFEFEF" }, line: { color: "EFEFEF" },
-  });
-
-  slide3.addText(
-    `Insufficient Exposure is what a rater selects when they feel they have not seen sufficient evidence from you on this behavior to provide a rating. These answers are set aside and they do not lower your score.\n\nA high count can itself be a signal as it can mean a behavior is not be visible to the people around you, even if you feel you are demonstrating it.\n\nIf you have areas with high insufficient exposure, we recommend you consider why you are receiving this feedback and what you could do to address this.`,
+// Note body text
+slide3.addText(
+  [
     {
-      x: 7.95, y: 4.38, w: 3.95, h: 2.25,
-      fontFace: "Segoe UI", fontSize: 8.8, color: "222222",
-      valign: "top", breakLine: true, fit: "shrink", margin: 0,
-    }
-  );
+      text: "Insufficient Exposure",
+      options: { bold: false },
+    },
+    {
+      text: " is what a rater selects when they feel they have not seen sufficient evidence from you on this behavior to provide a rating. These answers are set ",
+      options: {},
+    },
+      {
+        text: "aside",
+        options: { underline: true as any},
+      },
+    {
+      text: " and they do not lower your score.\n\nA high count can itself be a signal as it can mean a behavior is not be visible to the people around you, even if you feel you are demonstrating it.\n\nIf you have areas with high insufficient exposure, we recommend you consider why you are receiving this feedback and what you could do to address this.",
+      options: {},
+    },
+  ],
+  {
+    x: NOTE_X + 0.12, y: NOTE_BODY_Y + 0.10,
+    w: NOTE_W - 0.24, h: NOTE_BODY_H - 0.15,
+    fontFace: "Segoe UI", fontSize: 8.5, color: "222222",
+    valign: "top", breakLine: true, fit: "shrink", margin: 0,
+  }
+);
 
+// ── Footer ─────────────────────────────────────────────────────────────────
+// slide3.addText("Leadership Assessments  |  Ericsson  |  Page 12", {
+//   x: 0.25, y: 7.20, w: 6.0, h: 0.22,
+//   fontFace: "Segoe UI", fontSize: 7, color: "888888", margin: 0, valign: "middle",
+// });
 
+// "PARTICIPANT NAME & DATE" button (bottom-right)
+slide3.addShape(pptx.ShapeType.rect, {
+  x: 10.80, y: 7.10, w: 2.30, h: 0.28,
+  fill: { color: "FFFFFF" }, line: { color: "CC0000", pt: 1 },
+});
+slide3.addText("PARTICIPANT NAME & DATE", {
+  x: 10.80, y: 7.10, w: 2.30, h: 0.28,
+  fontFace: "Segoe UI", fontSize: 6.5, bold: true, color: "CC0000",
+  margin: 0, valign: "middle", align: "center",
+});
   //////////////////////////////////////////////////////
   // SLIDE 5 — SELF / OTHER
   //////////////////////////////////////////////////////
@@ -801,10 +886,10 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  slide5.addText("Additional detail in appendix", {
-    x: 0.38, y: 7.1, w: 4, h: 0.3,
-    fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
-  });
+  // slide5.addText("Additional detail in appendix", {
+  //   x: 0.38, y: 7.1, w: 4, h: 0.3,
+  //   fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
+  // });
 
   //////////////////////////////////////////////////////
   // SLIDE 6 — QUALITATIVE FEEDBACK
@@ -893,11 +978,7 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  slide6.addText("Additional detail in appendix", {
-    x: 0.38, y: 7.1, w: 4, h: 0.3,
-    fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
-  });
-
+ 
   //////////////////////////////////////////////////////
   // SLIDE 7 — COACHING QUADRANT (commented out for now)
   //////////////////////////////////////////////////////
