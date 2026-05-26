@@ -852,30 +852,33 @@ export function createSlideInsufficientExposures(params: SlideParams) {
 
   addFooterToSlide(slide3, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
+
 export function createSlideSelfOther(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slide5 = pptx.addSlide();
   slide5.background = { color: "FFFFFF" };
   addLogoToSlide(slide5, false);
 
+  // ── TITLE & SUBTITLE ───────────────────────────────────────────────────────
   slide5.addText("Self / other", {
-    x: 0.38, y: 0.15, w: 8, h: 0.5,
-    fontFace: "Segoe UI Semibold", fontSize: 40, color: "111111", margin: 0,
+    x: 0.38, y: 0.20, w: 8, h: 0.5,
+    fontFace: "Segoe UI Semibold", fontSize: 36, color: "111111", margin: 0,
   });
 
   slide5.addText("This page shows where your self-view differs from how colleagues experience your micro-behaviors.", {
     x: 0.38, y: 0.75, w: 10, h: 0.3,
-    fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
+    fontFace: "Segoe UI", fontSize: 11.5, color: "1B365D", margin: 0,
   });
 
-  const cardW = 3.9;
-  const cardStartY = 1.4;
-  const cardGap = 0.25;
-  const startX = 0.4;
+  // ── CARD CONFIGURATION ─────────────────────────────────────────────────────
+  const cardW = 3.98;
+  const cardStartY = 1.40;
+  const cardGap = 0.30;
+  const startX = 0.39;
 
   const cards = [
     {
-      header: "Colleagues see less\noften",
+      header: "Colleagues see less often",
       subheader: "Potential blind spots",
       bullets: [
         "Develops others for long-term impact",
@@ -885,74 +888,100 @@ export function createSlideSelfOther(params: SlideParams) {
     },
     {
       header: "Broadly aligned",
-      subheader: "Self-view and colleague\nfeedback are similar",
+      subheader: "Self-view and colleague feedback are similar",
       bullets: [
-        "Questions assumptions and\nways of working",
+        "Questions assumptions and ways of working",
         "Adapts based on feedback",
-        "Uses external signals to\nguide decisions",
+        "Uses external signals to guide decisions",
       ],
     },
     {
-      header: "Colleagues see more\noften",
+      header: "Colleagues see more often",
       subheader: "Potential strengths",
       bullets: [
-        "Seeks input from affected\nstakeholders before moving\nforward",
+        "Seeks input from affected stakeholders before moving forward",
         "Sets direction and priorities",
-        "Facilitates collective\nmomentum across teams",
+        "Facilitates collective momentum across teams",
       ],
     },
   ];
 
   cards.forEach((card, idx) => {
     const cardX = startX + idx * (cardW + cardGap);
-    const HEADER_H = 0.75;
-    const BODY_H = 3.0;
+    const HEADER_H = 0.90;
+    const BODY_H = 3.75;
+    const RADIUS = 0.08;
 
-    // Header (Blue)
-    slide5.addShape(pptx.ShapeType.rect, {
+    // Header Background: rounded rectangle
+    slide5.addShape(pptx.ShapeType.roundRect, {
       x: cardX, y: cardStartY, w: cardW, h: HEADER_H,
-      fill: { color: "1E56DB" }, line: { color: "1E56DB", pt: 0 }
+      rectRadius: RADIUS,
+      fill: { color: "1D6FD8" }, line: { color: "1D6FD8", pt: 0 }
     });
 
-    slide5.addText(card.header + "\n" + card.subheader, {
-      x: cardX + 0.15, y: cardStartY, w: cardW - 0.3, h: HEADER_H,
-      fontFace: "Segoe UI", fontSize: 12, bold: true, color: "FFFFFF",
-      valign: "middle", align: "left", margin: 0, breakLine: true
-    });
-
-    // Body (Gray)
+    // Flatten bottom corners of the header by overlaying a small flat rect
     slide5.addShape(pptx.ShapeType.rect, {
-      x: cardX, y: cardStartY + HEADER_H, w: cardW, h: BODY_H,
-      fill: { color: "F2F2F2" }, line: { color: "F2F2F2", pt: 0 }
+      x: cardX, y: cardStartY + HEADER_H - 0.12, w: cardW, h: 0.12,
+      fill: { color: "1D6FD8" }, line: { color: "1D6FD8", pt: 0 }
     });
 
-    // Bullets
-    const bulletText = card.bullets.map((b) => "• " + b).join("\n\n");
-    slide5.addText(bulletText, {
-      x: cardX + 0.15,
-      y: cardStartY + HEADER_H + 0.2,
-      w: cardW - 0.3,
-      h: BODY_H - 0.4,
-      fontFace: "Segoe UI",
-      fontSize: 10.5,
-      color: "111111",
-      valign: "top",
-      breakLine: true,
-      margin: 0,
+    // Header Text: Multi-weight
+    slide5.addText(
+      [
+        { text: card.header + "\n", options: { bold: true, fontSize: 13, color: "FFFFFF" } },
+        { text: card.subheader, options: { bold: false, fontSize: 10.5, color: "FFFFFF" } }
+      ],
+      {
+        x: cardX + 0.20, y: cardStartY + 0.08, w: cardW - 0.40, h: HEADER_H - 0.16,
+        fontFace: "Segoe UI", valign: "middle", align: "left", margin: 0,
+      }
+    );
+
+    // Body Background: rounded rectangle
+    slide5.addShape(pptx.ShapeType.roundRect, {
+      x: cardX, y: cardStartY + HEADER_H, w: cardW, h: BODY_H,
+      rectRadius: RADIUS,
+      fill: { color: "F4F4F6" }, line: { color: "F4F4F6", pt: 0 }
+    });
+
+    // Flatten top corners of the body by overlaying a small flat rect
+    slide5.addShape(pptx.ShapeType.rect, {
+      x: cardX, y: cardStartY + HEADER_H, w: cardW, h: 0.12,
+      fill: { color: "F4F4F6" }, line: { color: "F4F4F6", pt: 0 }
+    });
+
+    // Bullets: Custom vibrant teal bullets with navy text
+    let bulletY = cardStartY + HEADER_H + 0.25;
+    const bulletSpacing = 0.90;
+
+    card.bullets.forEach((bullet) => {
+      slide5.addText(
+        [
+          { text: "•  ", options: { color: "1B7F83", bold: true } },
+          { text: bullet, options: { color: "20354B" } }
+        ],
+        {
+          x: cardX + 0.20, y: bulletY,
+          w: cardW - 0.40, h: 0.70,
+          fontFace: "Segoe UI", fontSize: 10.5,
+          margin: 0, valign: "top",
+        }
+      );
+      bulletY += bulletSpacing;
     });
   });
 
-    slide5.addText("Additional detail in appendix", {
-    x: 0.2,
-    y: 5.95,
-    w: 2.5,
-    h: 0.16,
-    fontFace: "Segoe UI",
-    fontSize: 10,
+  // Footer text
+  slide5.addText("Additional detail in appendix", {
+    x: 0.38,
+    y: 6.25,
+    w: 3.5,
+    h: 0.20,
+    fontFace: "Segoe UI Semibold",
+    fontSize: 12,
     color: "222222",
     margin: 0,
   });
-
 
   addFooterToSlide(slide5, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
@@ -2180,130 +2209,156 @@ export function createSlideCoachingQuadrant(params: SlideParams) {
   addLogoToSlide(slide17, false);
 
   // ── Layout constants ───────────────────────────────────────────────────────
-  const TABLE_X     = 0.30;
+  const TABLE_X     = 0.38;
   const TABLE_Y     = 1.45;
-  const PART_W      = 2.55;
-  const SEC_W       = 1.90;   // section title sub-col
-  const BULL_W      = 3.60;   // bullets sub-col
-  const ACT_W       = 2.25;   // action col
-  const FEED_W      = SEC_W + BULL_W + ACT_W;  // 7.75
-  const TOTAL_W     = PART_W + FEED_W;          // 10.30
-  const HEADER_H    = 0.32;
-  const TEAL        = "24979B";
+  const HEADER_H    = 0.35;
+  const TEAL        = "1B7F83"; // Premium corporate teal
   const BORDER      = "BFDCDC";
   const BORDER_PT   = 0.75;
 
-  const X_PART      = TABLE_X;           // 0.30
-  const X_FEED      = X_PART + PART_W;   // 2.85
-  const X_BULL      = X_FEED + SEC_W;    // 4.75
-  const X_ACT       = X_BULL + BULL_W;   // 8.35
-  const PART_BOX_Y  = TABLE_Y + HEADER_H;
+  const PART_W      = 2.60;
+  const SEC_W       = 2.30;
+  const BULL_W      = 4.40;
+  const ACT_W       = 3.10;
 
-  // Row heights — sized to fit content exactly
-  const rowHeights  = [1.02, 1.02, 1.10, 1.28];
-  const TOTAL_ROW_H = rowHeights.reduce((a, b) => a + b, 0); // 4.42
+  const X_PART      = TABLE_X;           // 0.38
+  const X_FEED      = X_PART + PART_W + 0.18; // 3.16 (spacing gap of 0.18)
+  const X_BULL      = X_FEED + SEC_W;    // 5.46
+  const X_ACT       = X_BULL + BULL_W;   // 9.86
+  const PART_BOX_Y  = TABLE_Y + HEADER_H; // 1.80
+
+  // Row heights: sized to make it extremely spacious and elegant
+  const rowHeights  = [1.15, 1.15, 1.20, 1.30];
+  const TOTAL_ROW_H = rowHeights.reduce((a, b) => a + b, 0); // 4.80
   const PART_BOX_H  = TOTAL_ROW_H;
 
-  // ── TITLE ──────────────────────────────────────────────────────────────────
-  slide17.addText(resultsAtGlanceData.title, {
-    x: 0.30, y: 0.10, w: 5.2, h: 0.75,
+  // ── TITLE & SUBTITLE ───────────────────────────────────────────────────────
+  // Title part 1: "Your results "
+  slide17.addText("Your results ", {
+    x: 0.38, y: 0.20, w: 2.6, h: 0.6,
     fontFace: "Segoe UI", fontSize: 36,
     color: "222222", bold: false, margin: 0,
   });
 
-  // ── SUBTITLE ───────────────────────────────────────────────────────────────
-  slide17.addText(resultsAtGlanceData.subtitle, {
-    x: 0.30, y: 0.96, w: 6.5, h: 0.22,
-    fontFace: "Segoe UI", fontSize: 13,
-    color: "333333", margin: 0,
+  // Title part 2: "at a glance"
+  slide17.addText("at a glance", {
+    x: 2.98, y: 0.20, w: 2.5, h: 0.6,
+    fontFace: "Segoe UI", fontSize: 36,
+    color: "222222", bold: false, margin: 0,
   });
 
-  // ── BLUE TAG ───────────────────────────────────────────────────────────────
+  // Custom dotted underline under "at a glance"
+  slide17.addShape(pptx.ShapeType.line, {
+    x: 2.98, y: 0.72, w: 2.05, h: 0,
+    line: { color: "B8AA97", pt: 1.5, dashType: "dash" }
+  });
+
+  // Subtitle
+  slide17.addText(resultsAtGlanceData.subtitle, {
+    x: 0.38, y: 0.95, w: 7.0, h: 0.25,
+    fontFace: "Segoe UI", fontSize: 13,
+    color: "1B365D", margin: 0,
+  });
+
+  // ── BLUE BADGE (Top Right) ─────────────────────────────────────────────────
   slide17.addShape(pptx.ShapeType.roundRect, {
-    x: 5.95, y: 0.10, w: 2.35, h: 0.58,
-    rectRadius: 0.05,
-    fill: { color: "1F73E8" }, line: { color: "1F73E8" },
+    x: 6.20, y: 0.30, w: 2.20, h: 0.50,
+    rectRadius: 0.10,
+    fill: { color: "0F62FE" }, line: { color: "0F62FE" },
   });
   slide17.addText(resultsAtGlanceData.sectionLeft, {
-    x: 5.95, y: 0.10, w: 2.35, h: 0.58,
-    fontFace: "Segoe UI", fontSize: 10, bold: true,
+    x: 6.20, y: 0.30, w: 2.20, h: 0.50,
+    fontFace: "Segoe UI", fontSize: 9, bold: true,
     color: "FFFFFF", align: "center", valign: "middle",
     margin: 0, breakLine: true,
   });
 
-  // ── GREY TAG ───────────────────────────────────────────────────────────────
+  // ── GREY BADGE (Top Right) ─────────────────────────────────────────────────
   slide17.addShape(pptx.ShapeType.roundRect, {
-    x: 8.55, y: 0.10, w: 2.35, h: 0.58,
-    rectRadius: 0.05,
-    fill: { color: "7A7A7A" }, line: { color: "7A7A7A" },
+    x: 8.60, y: 0.30, w: 2.20, h: 0.50,
+    rectRadius: 0.10,
+    fill: { color: "5E5E5E" }, line: { color: "5E5E5E" },
   });
   slide17.addText(resultsAtGlanceData.sectionRight, {
-    x: 8.55, y: 0.10, w: 2.35, h: 0.58,
-    fontFace: "Segoe UI", fontSize: 10, bold: true,
+    x: 8.60, y: 0.30, w: 2.20, h: 0.50,
+    fontFace: "Segoe UI", fontSize: 9, bold: true,
     color: "FFFFFF", align: "center", valign: "middle",
     margin: 0, breakLine: true,
   });
 
-  // ── HEADER ROW — single teal bar ──────────────────────────────────────────
+  // ── HEADER ROW ─────────────────────────────────────────────────────────────
+  // Left Column Header
   slide17.addShape(pptx.ShapeType.rect, {
-    x: X_PART, y: TABLE_Y, w: TOTAL_W, h: HEADER_H,
+    x: X_PART, y: TABLE_Y, w: PART_W, h: HEADER_H,
     fill: { color: TEAL }, line: { color: TEAL },
   });
   slide17.addText("Participant information", {
-    x: X_PART + 0.10, y: TABLE_Y, w: PART_W, h: HEADER_H,
-    fontFace: "Segoe UI", fontSize: 11, bold: true,
-    color: "FFFFFF", valign: "middle", margin: 0,
-  });
-  slide17.addText("What the feedback suggests", {
-    x: X_FEED + 0.10, y: TABLE_Y, w: SEC_W + BULL_W, h: HEADER_H,
-    fontFace: "Segoe UI", fontSize: 11, bold: true,
-    color: "FFFFFF", valign: "middle", margin: 0,
-  });
-  slide17.addText("What to do", {
-    x: X_ACT + 0.10, y: TABLE_Y, w: ACT_W, h: HEADER_H,
+    x: X_PART + 0.12, y: TABLE_Y, w: PART_W - 0.24, h: HEADER_H,
     fontFace: "Segoe UI", fontSize: 11, bold: true,
     color: "FFFFFF", valign: "middle", margin: 0,
   });
 
-  // ── PARTICIPANT INFO BOX — outer border ────────────────────────────────────
+  // Right Column Header 1: What the feedback suggests (spans both title and bullets)
+  slide17.addShape(pptx.ShapeType.rect, {
+    x: X_FEED, y: TABLE_Y, w: SEC_W + BULL_W, h: HEADER_H,
+    fill: { color: TEAL }, line: { color: TEAL },
+  });
+  slide17.addText("What the feedback suggests", {
+    x: X_FEED + 0.12, y: TABLE_Y, w: SEC_W + BULL_W - 0.24, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 11, bold: true,
+    color: "FFFFFF", valign: "middle", margin: 0,
+  });
+
+  // Right Column Header 2: What to do
+  slide17.addShape(pptx.ShapeType.rect, {
+    x: X_ACT, y: TABLE_Y, w: ACT_W, h: HEADER_H,
+    fill: { color: TEAL }, line: { color: TEAL },
+  });
+  slide17.addText("What to do", {
+    x: X_ACT + 0.12, y: TABLE_Y, w: ACT_W - 0.24, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 11, bold: true,
+    color: "FFFFFF", valign: "middle", margin: 0,
+  });
+
+  // ── PARTICIPANT INFO CARD ──────────────────────────────────────────────────
+  // Outer Border Box
   slide17.addShape(pptx.ShapeType.rect, {
     x: X_PART, y: PART_BOX_Y, w: PART_W, h: PART_BOX_H,
     fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
   });
 
-  // Info rows: each gets its own subtle bottom separator
+  // Label background (grey block on the left side of the participant info box)
+  slide17.addShape(pptx.ShapeType.rect, {
+    x: X_PART, y: PART_BOX_Y, w: 1.00, h: 1.60,
+    fill: { color: "F4F4F6" }, line: { color: "F4F4F6" },
+  });
+
   const INFO_LABEL_X  = X_PART + 0.10;
   const INFO_VALUE_X  = X_PART + 1.12;
-  const INFO_LABEL_W  = 0.95;
-  const INFO_VALUE_W  = 1.28;
-  const INFO_DIV_X    = X_PART + 1.05;  // vertical divider x
+  const INFO_LABEL_W  = 0.85;
+  const INFO_VALUE_W  = 1.35;
+  const INFO_DIV_X    = X_PART + 1.00;
 
   const infoRows = [
-    { label: "Name",               value: resultsAtGlanceData.participantInfo.name,            rowH: 0.38 },
-    { label: "Reporting\nperiod",  value: resultsAtGlanceData.participantInfo.reportingPeriod,  rowH: 0.44 },
-    { label: "Response\nrate",     value: resultsAtGlanceData.participantInfo.responseRate,     rowH: 0.44 },
+    { label: "Name",               value: resultsAtGlanceData.participantInfo.name,            rowH: 0.45 },
+    { label: "Reporting\nperiod",  value: resultsAtGlanceData.participantInfo.reportingPeriod,  rowH: 0.55 },
+    { label: "Response\nrate",     value: resultsAtGlanceData.participantInfo.responseRate,     rowH: 0.50 },
   ];
 
-  let infoY = PART_BOX_Y + 0.10;
+  let infoY = PART_BOX_Y + 0.05;
   infoRows.forEach(({ label, value, rowH }, i) => {
-    // Subtle row separator (except after last info row)
+    // Subtle horizontal divider between info rows
     if (i > 0) {
       slide17.addShape(pptx.ShapeType.line, {
-        x: X_PART, y: infoY - 0.06, w: PART_W, h: 0,
-        line: { color: "E8E8E8", pt: 0.5 },
+        x: X_PART, y: infoY - 0.03, w: PART_W, h: 0,
+        line: { color: BORDER, pt: BORDER_PT },
       });
     }
 
-    // Vertical divider spans full row height
-    slide17.addShape(pptx.ShapeType.line, {
-      x: INFO_DIV_X, y: infoY - 0.04, w: 0, h: rowH,
-      line: { color: "D8D8D8", pt: 0.75 },
-    });
-
     slide17.addText(label, {
       x: INFO_LABEL_X, y: infoY, w: INFO_LABEL_W, h: rowH,
-      fontFace: "Segoe UI", fontSize: 10,
-      color: "444444", breakLine: true, valign: "middle", margin: 0,
+      fontFace: "Segoe UI", fontSize: 9.5,
+      color: "333333", breakLine: true, valign: "middle", margin: 0,
     });
     slide17.addText(value, {
       x: INFO_VALUE_X, y: infoY, w: INFO_VALUE_W, h: rowH,
@@ -2311,81 +2366,111 @@ export function createSlideCoachingQuadrant(params: SlideParams) {
       bold: true, color: "111111", valign: "middle", margin: 0,
     });
 
-    infoY += rowH + 0.06;
+    infoY += rowH + 0.05;
   });
 
-  // Horizontal separator below info rows
-  const DIVIDER_Y = PART_BOX_Y + 1.50;
+  // Vertical line separator between label column and value column
+  slide17.addShape(pptx.ShapeType.line, {
+    x: INFO_DIV_X, y: PART_BOX_Y, w: 0, h: 1.60,
+    line: { color: BORDER, pt: BORDER_PT },
+  });
+
+  // Horizontal line separating info rows from confidentiality text
+  const DIVIDER_Y = PART_BOX_Y + 1.60;
   slide17.addShape(pptx.ShapeType.line, {
     x: X_PART, y: DIVIDER_Y, w: PART_W, h: 0,
     line: { color: BORDER, pt: BORDER_PT },
   });
 
-  // Confidential text
+  // Confidential & Anonymity texts below info rows
   slide17.addText(resultsAtGlanceData.participantInfo.confidentialityText, {
-    x: INFO_LABEL_X, y: DIVIDER_Y + 0.12, w: PART_W - 0.18, h: 1.40,
-    fontFace: "Segoe UI", fontSize: 8, color: "555555",
+    x: INFO_LABEL_X, y: DIVIDER_Y + 0.18, w: PART_W - 0.20, h: 1.35,
+    fontFace: "Segoe UI", fontSize: 7.8, color: "666666",
     breakLine: true, margin: 0, valign: "top",
   });
 
-  // Anonymity text
   slide17.addText(resultsAtGlanceData.participantInfo.anonymityText, {
-    x: INFO_LABEL_X, y: DIVIDER_Y + 1.62, w: PART_W - 0.18, h: 1.40,
-    fontFace: "Segoe UI", fontSize: 8, color: "555555",
+    x: INFO_LABEL_X, y: DIVIDER_Y + 1.65, w: PART_W - 0.20, h: 1.35,
+    fontFace: "Segoe UI", fontSize: 7.8, color: "666666",
     breakLine: true, margin: 0, valign: "top",
   });
 
-  // ── FEEDBACK ROWS — drawn as individual cell rects (no line shapes) ────────
-  // This avoids the selection-handle artifact from standalone line elements.
+  // ── FEEDBACK & ACTION ROWS ─────────────────────────────────────────────────
   let currentY = PART_BOX_Y;
 
   resultsAtGlanceData.feedbackSections.forEach((section, index) => {
     const rowH = rowHeights[index];
 
-    // Cell 1: section title
+    // Cell 1: Section Title
     slide17.addShape(pptx.ShapeType.rect, {
       x: X_FEED, y: currentY, w: SEC_W, h: rowH,
       fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
     });
 
-    // Cell 2: bullets
+    // Cell 2: Bullets
     slide17.addShape(pptx.ShapeType.rect, {
       x: X_BULL, y: currentY, w: BULL_W, h: rowH,
       fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
     });
 
-    // Cell 3: action
-    slide17.addShape(pptx.ShapeType.rect, {
-      x: X_ACT, y: currentY, w: ACT_W, h: rowH,
-      fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
-    });
+    // Cell 3: Action (What to do)
+    // Row 3 and Row 4 are merged for this column!
+    if (index === 2) {
+      // Draw a merged cell spanning Row 3 + Row 4
+      const mergedH = rowHeights[2] + rowHeights[3];
+      slide17.addShape(pptx.ShapeType.rect, {
+        x: X_ACT, y: currentY, w: ACT_W, h: mergedH,
+        fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
+      });
 
-    // Section title text
+      // Combine Row 3 and Row 4 action texts
+      const combinedAction = section.action + "\n\n" + resultsAtGlanceData.feedbackSections[3].action;
+      slide17.addText(combinedAction, {
+        x: X_ACT + 0.12, y: currentY + 0.12,
+        w: ACT_W - 0.24, h: mergedH - 0.24,
+        fontFace: "Segoe UI", fontSize: 9.5,
+        color: "333333", breakLine: true, valign: "top", margin: 0,
+      });
+    } else if (index < 2) {
+      // Row 1 and Row 2 get regular action cells
+      slide17.addShape(pptx.ShapeType.rect, {
+        x: X_ACT, y: currentY, w: ACT_W, h: rowH,
+        fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
+      });
+
+      slide17.addText(section.action, {
+        x: X_ACT + 0.12, y: currentY + 0.12,
+        w: ACT_W - 0.24, h: rowH - 0.24,
+        fontFace: "Segoe UI", fontSize: 9.5,
+        color: "333333", breakLine: true, valign: "top", margin: 0,
+      });
+    }
+
+    // Section Title Text
     slide17.addText(section.title, {
-      x: X_FEED + 0.10, y: currentY + 0.10,
-      w: SEC_W - 0.15, h: rowH - 0.15,
-      fontFace: "Segoe UI", fontSize: 11, bold: true,
+      x: X_FEED + 0.12, y: currentY + 0.12,
+      w: SEC_W - 0.24, h: rowH - 0.24,
+      fontFace: "Segoe UI", fontSize: 10.5, bold: true,
       color: "20354B", breakLine: true, valign: "top", margin: 0,
     });
 
-    // Bullet points
+    // Custom Styled Bullets (Teal bullet point + Navy body text)
     let bulletY = currentY + 0.12;
+    const bulletSpacing = 0.32;
     section.points.forEach((point) => {
-      slide17.addText(`• ${point}`, {
-        x: X_BULL + 0.10, y: bulletY,
-        w: BULL_W - 0.18, h: 0.28,
-        fontFace: "Segoe UI", fontSize: 10,
-        color: "20354B", margin: 0, fit: "shrink",
-      });
-      bulletY += 0.28;
-    });
-
-    // Action text
-    slide17.addText(section.action, {
-      x: X_ACT + 0.10, y: currentY + 0.10,
-      w: ACT_W - 0.18, h: rowH - 0.15,
-      fontFace: "Segoe UI", fontSize: 10,
-      color: "333333", breakLine: true, valign: "top", margin: 0,
+      slide17.addText(
+        [
+          { text: "•  ", options: { color: "1B7F83", bold: true } },
+          { text: point, options: { color: "20354B" } }
+        ],
+        {
+          x: X_BULL + 0.12, y: bulletY,
+          w: BULL_W - 0.24, h: 0.28,
+          fontFace: "Segoe UI", fontSize: 10,
+          margin: 0, valign: "top",
+        }
+      );
+      bulletY += bulletSpacing;
     });
 
     currentY += rowH;
