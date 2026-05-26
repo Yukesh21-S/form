@@ -4,7 +4,15 @@ import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 
- import verbatimQuotesData, { coachingQuadrantData, leadershipImpactData, personalDevelopmentPlanData, positiveImpactData, resultsAtGlanceData, verbatimThemesData } from "../form-participants/datas";
+import verbatimQuotesData, {
+  coachingQuadrantData,
+  leadershipImpactData,
+  personalDevelopmentPlanData,
+  positiveImpactData,
+  resultsAtGlanceData,
+  verbatimThemesData,
+} from "../form-participants/datas";
+
 //////////////////////////////////////////////////////
 // COLORS
 //////////////////////////////////////////////////////
@@ -115,7 +123,7 @@ function getEricssonLogoBase64(color: string) {
 function addLogoToSlide(slide: any, isDarkBg: boolean) {
   const color = isDarkBg ? "FFFFFF" : "000000";
   const logoBase64 = getEricssonLogoBase64(color);
-  
+
   // Add Logo symbol
   slide.addImage({
     data: logoBase64,
@@ -124,7 +132,7 @@ function addLogoToSlide(slide: any, isDarkBg: boolean) {
     w: 0.35,
     h: 0.35,
   });
-  
+
   // Add "ERICSSON" text underneath it
   slide.addText("ERICSSON", {
     x: 12.15,
@@ -143,6 +151,7 @@ function addLogoToSlide(slide: any, isDarkBg: boolean) {
 //////////////////////////////////////////////////////
 // GLOBAL FOOTER HELPER
 //////////////////////////////////////////////////////
+
 function addFooterToSlide(
   slide: any,
   pptx: any,
@@ -191,89 +200,27 @@ function addFooterToSlide(
 }
 
 //////////////////////////////////////////////////////
-// ROUTE
+// SLIDE INTERFACE
 //////////////////////////////////////////////////////
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+interface SlideParams {
+  pptx: pptxgen;
+  participantName: string;
+  footerDate: string;
+  pageNumber: number;
+  analytics: any[];
+  selfAnalytics: any[];
+  othersAnalytics: any[];
+  enterpriseAnalytics: any[];
+  diagramBase64?: string;
+}
 
-  const formId = searchParams.get("formId");
-  const participantId = searchParams.get("participantId");
+//////////////////////////////////////////////////////
+// MODULAR SLIDE CREATION FUNCTIONS
+//////////////////////////////////////////////////////
 
-  if (!formId) {
-    return Response.json(
-      { error: "formId required" },
-      { status: 400 }
-    );
-  }
-
-  //////////////////////////////////////////////////////
-  // FETCH FORM
-  //////////////////////////////////////////////////////
-
-  const form = await prisma.form.findUnique({
-    where: { id: formId },
-    include: {
-      questions: { include: { options: true } },
-      responses: {
-        include: {
-          participant: true, // Added
-          answers: { include: { option: true } },
-        },
-      },
-    },
-  });
-
-  if (!form) {
-    return Response.json({ error: "Form not found" }, { status: 404 });
-  }
-
-  //////////////////////////////////////////////////////
-  // GLOBAL FOOTER VARIABLES
-  //////////////////////////////////////////////////////
-  
-  const participantName = form.responses[0]?.participant?.fullName || "PARTICIPANT";
-  const footerDate = new Date().toLocaleDateString();
-
-  //////////////////////////////////////////////////////
-  // RESPONSE POOLS
-  //////////////////////////////////////////////////////
-
-  // All responses targeting this participant (or all if no participantId)
-  const filteredResponses = participantId
-    ? form.responses.filter(
-      (r: any) => r.participantId === participantId
-    )
-    : form.responses;
-
-  // All responses across the form (enterprise benchmark)
-  const allResponses = form.responses;
-
-  // SELF = responses where respondent email == participant email
-  const selfResponses = filteredResponses.filter(
-    (r: any) => !!r.participant?.email && r.email.toLowerCase() === r.participant.email.toLowerCase()
-  );
-
-  // OTHERS = everything else
-  const othersResponses = filteredResponses.filter(
-    (r: any) => !r.participant?.email || r.email.toLowerCase() !== r.participant.email.toLowerCase()
-  );
-
-  //////////////////////////////////////////////////////
-  // COMPUTE ANALYTICS
-  //////////////////////////////////////////////////////
-
-  const analytics = computeAnalytics(form.questions, filteredResponses);
-  const selfAnalytics = computeAnalytics(form.questions, selfResponses);
-  const othersAnalytics = computeAnalytics(form.questions, othersResponses);
-  const enterpriseAnalytics = computeAnalytics(form.questions, allResponses);
-
-  const pptx = new pptxgen();
-  pptx.layout = "LAYOUT_WIDE";
-  pptx.author = "Antigravity";
-  pptx.subject = "360 Feedback";
-  pptx.company = "360 Feedback Report";
-
+export function createSlideIntro(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber, diagramBase64 } = params;
   const slideIntro = pptx.addSlide();
   slideIntro.background = { color: "111111" };
   addLogoToSlide(slideIntro, true);
@@ -284,21 +231,17 @@ export async function GET(req: NextRequest) {
     fontFace: "Aptos", fontSize: 40, bold: false, color: "FFFFFF", margin: 0,
   });
 
-  // ─── DIAGRAM IMAGE (replaces all the arrow/circle drawing code) ────────────
+  if (diagramBase64) {
+    slideIntro.addImage({
+      data: "image/png;base64," + diagramBase64,
+      x: 0.2,
+      y: 1.2,
+      w: 5.8,
+      h: 5.8,
+    });
+  }
 
-
-  const diagramPath = path.join(process.cwd(), "public", "360_diagram.png");
-  const diagramBase64 = fs.readFileSync(diagramPath).toString("base64");
-
-  slideIntro.addImage({
-    data: "image/png;base64," + diagramBase64,
-    x: 0.2,
-    y: 1.2,
-    w: 5.8,
-    h: 5.8,
-  });
-
-  // ─── RIGHT SIDE TEXT ───────────────────────────────────────────────────────
+  // RIGHT SIDE TEXT
   const TX = 7.0;
   const TW = 5.9;
 
@@ -315,11 +258,13 @@ export async function GET(req: NextRequest) {
     { x: TX, y: 4.9, w: TW, h: 2.0, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
   );
 
-  // Footer for Intro
-  addFooterToSlide(slideIntro, pptx, participantName, footerDate,1, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slideIntro, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
+export function createSlideHowCreated(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
   const slideHowCreated = pptx.addSlide();
-  slideHowCreated.background = { color: "111111" }; // Dark theme matched to screenshot
+  slideHowCreated.background = { color: "111111" };
   addLogoToSlide(slideHowCreated, true);
 
   // TITLES
@@ -327,7 +272,6 @@ export async function GET(req: NextRequest) {
     x: 0.5, y: 0.4, w: 8, h: 1.2,
     fontFace: "Segoe UI", fontSize: 50, bold: false, color: "FFFFFF", margin: 0,
   });
-
 
   // Blue banner notification (top right)
   slideHowCreated.addShape(pptx.ShapeType.roundRect, {
@@ -350,7 +294,6 @@ export async function GET(req: NextRequest) {
     "You nominated colleagues across manager, peer, direct report and broader stakeholder groups to give a balanced view of your leadership.\n\nEach rater assessed you against the micro-behaviors on the right. Micro-behaviors are deliberately observable and specific interpretations of the leadership framework.",
     { x: 0.5, y: 2.3, w: 2.8, h: 3.5, fontFace: "Segoe UI", fontSize: 11, color: "FFFFFF", valign: "top", breakLine: true, margin: 0 }
   );
-
 
   // VERTICAL DIVIDER LINE
   slideHowCreated.addShape(pptx.ShapeType.line, {
@@ -420,11 +363,11 @@ export async function GET(req: NextRequest) {
     rightBehaviorY += lineSpacing;
   });
 
-  // Footer for How Created
-  addFooterToSlide(slideHowCreated, pptx, participantName, footerDate,2, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slideHowCreated, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-  // ---------------------------------------------------------
-
+export function createSlideHowToUse(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
   const slideHowToUse = pptx.addSlide();
   slideHowToUse.background = { color: "111111" };
   addLogoToSlide(slideHowToUse, true);
@@ -436,7 +379,7 @@ export async function GET(req: NextRequest) {
   const HTU_BODY_Y: number = HTU_HEADER_Y + HTU_HEADER_H;
   const HTU_BODY_H: number = 3.9;
   const HTU_BANNER_Y: number = 6.28;
-  const HTU_BANNER_H: number = 0.88;
+  const HTU_BANNER_H: number = 0.5;
   const HTU_HEADER_BG: string = "2D6DB5";
   const HTU_BODY_BG: string = "E8E8E8";
 
@@ -494,16 +437,11 @@ export async function GET(req: NextRequest) {
     { x: 0.3, y: HTU_BANNER_Y, w: 12.73, h: HTU_BANNER_H, fontFace: "Aptos", fontSize: 14, color: "FFFFFF", align: "center", valign: "middle", margin: 0 }
   );
 
-  // Footer for How To Use
-  addFooterToSlide(slideHowToUse, pptx, participantName, footerDate,3, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slideHowToUse, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-  // ----------------------------------------------------------
-
-
-  //////////////////////////////////////////////////////
-  // SLIDE 1 — OVERALL RESULTS
-  //////////////////////////////////////////////////////
-
+export function createSlideOverallResults(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber, analytics } = params;
   const slide1 = pptx.addSlide();
   slide1.background = { color: COLORS.bg };
 
@@ -546,7 +484,7 @@ export async function GET(req: NextRequest) {
   // Legend
   const legends = [
     { color: COLORS.green, text: "Consistently\nobserved (>85%)", x: 7.3 },
-    { color: "D96B27", text: "Moderately\nobserved (85-70%)", x: 8.8 }, // customized warm orange and label syntax to match image
+    { color: "D96B27", text: "Moderately\nobserved (85-70%)", x: 8.8 },
     { color: COLORS.red, text: "Inconsistently\nobserved (<70%)", x: 10.4 },
   ];
 
@@ -562,7 +500,6 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  // Top right Ericsson logo
   addLogoToSlide(slide1, false);
 
   const SPLIT_INDEX = Math.ceil(analytics.length / 2);
@@ -607,24 +544,19 @@ export async function GET(req: NextRequest) {
     if (isLeft) leftY += Y_GAP; else rightY += Y_GAP;
   });
 
-  // Footnote
   slide1.addText("N.B. Scores are rounded to the nearest whole percentage before thresholds are applied.", {
     x: 0.38, y: 6.82, w: 8.0, h: 0.18,
     fontFace: "Segoe UI", fontSize: 7.5, color: "555555", margin: 0,
   });
 
-  // Footer for Overall Results
-  addFooterToSlide(slide1, pptx, participantName, footerDate, 4, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slide1, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-
-  //////////////////////////////////////////////////////
-  // SLIDE 2 — RESULTS DISTRIBUTION
-  //////////////////////////////////////////////////////
-
+export function createSlideResultsDistribution(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber, othersAnalytics } = params;
   const slide2 = pptx.addSlide();
   slide2.background = { color: "FFFFFF" };
   addLogoToSlide(slide2, false);
-
 
   slide2.addText("Results distribution", {
     x: 0.38, y: 0.15, w: 6, h: 0.5,
@@ -642,7 +574,7 @@ export async function GET(req: NextRequest) {
     align: "center", valign: "middle", margin: 0,
   });
 
-  // TABLE CONFIG - Following template layout
+  // TABLE CONFIG
   const TABLE_X = 0.38;
   const TABLE_Y = 0.75;
   const HEADER_H = 0.36;
@@ -658,8 +590,6 @@ export async function GET(req: NextRequest) {
   const ROW_H = 0.20;
   const TOTAL_W = 12.4;
 
-  // Header Backgrounds
-  // Results & Distribution part (Light Gray)
   slide2.addShape(pptx.ShapeType.rect, { x: COL_X[0], y: TABLE_Y, w: COL_W[0] + COL_W[1], h: HEADER_H, fill: { color: "E7E7E7" } });
 
   const headers = [
@@ -683,7 +613,7 @@ export async function GET(req: NextRequest) {
   });
 
   // COLUMN STRIPES (Very Light)
-  const STRIPE_H = analytics.length * ROW_H;
+  const STRIPE_H = othersAnalytics.length * ROW_H;
   slide2.addShape(pptx.ShapeType.rect, { x: COL_X[2], y: TABLE_Y + HEADER_H, w: COL_W[2], h: STRIPE_H, fill: { color: "F9EBEB" } });
   slide2.addShape(pptx.ShapeType.rect, { x: COL_X[3], y: TABLE_Y + HEADER_H, w: COL_W[3], h: STRIPE_H, fill: { color: "FFF0F0" } });
   slide2.addShape(pptx.ShapeType.rect, { x: COL_X[4], y: TABLE_Y + HEADER_H, w: COL_W[4], h: STRIPE_H, fill: { color: "F5F5F5" } });
@@ -691,7 +621,6 @@ export async function GET(req: NextRequest) {
 
   const CHART_CENTER_X = COL_X[1] + (COL_W[1] / 2);
 
-  // ROWS
   othersAnalytics.forEach((item, idx) => {
     const y = TABLE_Y + HEADER_H + idx * ROW_H;
     if (y > 7.3) return;
@@ -718,12 +647,10 @@ export async function GET(req: NextRequest) {
       });
     });
 
-    // Bars - Normalized to stay within column
+    // Bars
     const total = (dist.Rarely || 0) + (dist.Sometimes || 0) + (dist.Often || 0) + (dist.Always || 0);
     if (total > 0) {
-      // Divergent logic: Rarely/Sometimes/Often go Left, Always goes Right
-      // Max possible width for one side is COL_W[1] / 2 - padding
-      const HALF_BAR_MAX_W = (COL_W[1] / 2) - 0.1; // 2.2 units
+      const HALF_BAR_MAX_W = (COL_W[1] / 2) - 0.1;
       const scale = HALF_BAR_MAX_W / total;
 
       const wR = (dist.Rarely || 0) * scale;
@@ -747,229 +674,189 @@ export async function GET(req: NextRequest) {
     line: { color: "111111", pt: 1 }
   });
 
-  // Footer
-  addFooterToSlide(slide2, pptx, participantName, footerDate,5, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slide2, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-  //////////////////////////////////////////////////////
-  // SLIDE 3 — INSUFFICIENT EXPOSURES
-  //////////////////////////////////////////////////////
-
+export function createSlideInsufficientExposures(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber, analytics } = params;
   const slide3 = pptx.addSlide();
-slide3.background = { color: "FFFFFF" };
-addLogoToSlide(slide3, false);
+  slide3.background = { color: "FFFFFF" };
+  addLogoToSlide(slide3, false);
 
-// ── Title ──────────────────────────────────────────────────────────────────
-slide3.addText("Insufficient Exposures", {
-  x: 0.25, y: 0.08, w: 8.0, h: 0.55,
-  fontFace: "Segoe UI", fontSize: 28, color: "1A1A1A", bold: false, margin: 0,
-});
+  slide3.addText("Insufficient Exposures", {
+    x: 0.25, y: 0.08, w: 8.0, h: 0.55,
+    fontFace: "Segoe UI", fontSize: 28, color: "1A1A1A", bold: false, margin: 0,
+  });
 
-// ── Ericsson logo placeholder (top-right) ──────────────────────────────────
-// (Add your logo image here if needed)
+  const TABLE_LEFT = 0.25;
+  const TABLE_W = 6.55;
+  const COL1_W = 3.55;
+  const COL2_W = TABLE_W - COL1_W;
+  const COL2_X = TABLE_LEFT + COL1_W;
+  const HEADER_Y = 0.72;
+  const HEADER_H = 0.28;
+  const DATA_START_Y = HEADER_Y + HEADER_H;   // 1.00"
 
-// ── Table constants ────────────────────────────────────────────────────────
-const TABLE_LEFT   = 0.25;   // left edge of table
-const TABLE_W      = 6.30;   // total table width
-const COL1_W       = 3.55;   // "Results" column width
-const COL2_W       = TABLE_W - COL1_W; // "Count" column width
-const COL2_X       = TABLE_LEFT + COL1_W;
-const HEADER_Y     = 0.72;
-// const HEADER_H     = 0.28;
-// const ROW_H        = 0.255;  // row height — 22 rows × 0.255 ≈ 5.6" fits in slide
-const DATA_START_Y = HEADER_Y + HEADER_H;
+  // ── Dynamic row height: fit ALL rows between header and footer ───────────
+  // Footer sits at y ≈ 6.82"; leave 0.05" breathing room above it.
+  const FOOTER_TOP = 6.82;
+  const AVAILABLE_H = FOOTER_TOP - DATA_START_Y;           // 5.82"
+  const ROW_H = analytics.length > 0
+    ? Math.min(0.255, AVAILABLE_H / analytics.length)      // shrink only when needed
+    : 0.255;
 
-// ── Header row background ──────────────────────────────────────────────────
-slide3.addShape(pptx.ShapeType.rect, {
-  x: TABLE_LEFT, y: HEADER_Y, w: TABLE_W, h: HEADER_H,
-  fill: { color: "D0D0D0" }, line: { color: "D0D0D0" },
-});
+  // Header row background
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: TABLE_LEFT, y: HEADER_Y, w: TABLE_W, h: HEADER_H,
+    fill: { color: "D0D0D0" }, line: { color: "D0D0D0" },
+  });
 
-// ── Header text ───────────────────────────────────────────────────────────
-slide3.addText("Results", {
-  x: TABLE_LEFT + 0.06, y: HEADER_Y, w: COL1_W, h: HEADER_H,
-  fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
-  margin: 0, valign: "middle", align: "left",
-});
+  // Header text col 1
+  slide3.addText("Results", {
+    x: TABLE_LEFT + 0.06, y: HEADER_Y, w: COL1_W, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
+    margin: 0, valign: "middle", align: "left",
+  });
 
-slide3.addText("Count of Insufficient Exposure", {
-  x: COL2_X, y: HEADER_Y, w: COL2_W, h: HEADER_H,
-  fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
-  margin: 0, valign: "middle", align: "left",
-});
+  // Header text col 2
+  slide3.addText("Count of Insufficient Exposure", {
+    x: COL2_X, y: HEADER_Y, w: COL2_W, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
+    margin: 0, valign: "middle", align: "left",
+  });
 
-// ── Vertical divider (full height: header + all rows) ─────────────────────
-slide3.addShape(pptx.ShapeType.line, {
-  x: COL2_X, y: HEADER_Y,
-  w: 0.001, h: HEADER_H + (analytics.length * ROW_H),
-  line: { color: "A0A0A0", pt: 0.75 },
-});
-
-// ── Outer border of entire table ──────────────────────────────────────────
-slide3.addShape(pptx.ShapeType.rect, {
-  x: TABLE_LEFT, y: HEADER_Y,
-  w: TABLE_W, h: HEADER_H + (analytics.length * ROW_H),
-  fill: { type: "none" }, line: { color: "B0B0B0", pt: 0.75 },
-});
-
-// ── Data rows ─────────────────────────────────────────────────────────────
-analytics.forEach((item, idx) => {
-  const count   = item.distribution["Insufficient Exposure"] || 0;
-  const rowY    = DATA_START_Y + idx * ROW_H;
-  const isEven  = idx % 2 === 0;
-
-  // Alternating very-light background for even rows (matches screenshot)
-  if (isEven) {
-    slide3.addShape(pptx.ShapeType.rect, {
-      x: TABLE_LEFT, y: rowY, w: TABLE_W, h: ROW_H,
-      fill: { color: "F9F9F9" }, line: { pt: 0 },
-    });
-  }
-
-  // Horizontal separator line
+  // Vertical divider between col 1 and col 2
   slide3.addShape(pptx.ShapeType.line, {
-    x: TABLE_LEFT, y: rowY + ROW_H,
-    w: TABLE_W, h: 0.001,
-    line: { color: "D0D0D0", pt: 0.5 },
+    x: COL2_X, y: HEADER_Y,
+    w: 0.001, h: HEADER_H + (analytics.length * ROW_H),
+    line: { color: "A0A0A0", pt: 0.75 },
   });
 
-  // Row label
-  slide3.addText(item.question, {
-    x: TABLE_LEFT + 0.06, y: rowY + 0.01, w: COL1_W - 0.08, h: ROW_H - 0.02,
-    fontFace: "Segoe UI", fontSize: 7.8, color: "222222",
-    margin: 0, valign: "middle", fit: "shrink",
+  // Outer border of entire table
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: TABLE_LEFT, y: HEADER_Y,
+    w: TABLE_W, h: HEADER_H + (analytics.length * ROW_H),
+    fill: { type: "none" }, line: { color: "B0B0B0", pt: 0.75 },
   });
 
-  if (count === 0) {
-    // Zero: just show "0" left-aligned in the count column
-    slide3.addText("0", {
-      x: COL2_X + 0.08, y: rowY + 0.01, w: 0.5, h: ROW_H - 0.02,
-      fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
-      margin: 0, valign: "middle", align: "left",
+  // ── Data rows ─────────────────────────────────────────────────────────────
+  analytics.forEach((item, idx) => {
+    const count = item.distribution["Insufficient Exposure"] || 0;
+    const rowY = DATA_START_Y + idx * ROW_H;
+    const isEven = idx % 2 === 0;
+
+    if (isEven) {
+      slide3.addShape(pptx.ShapeType.rect, {
+        x: TABLE_LEFT, y: rowY, w: TABLE_W, h: ROW_H,
+        fill: { color: "F9F9F9" }, line: { pt: 0 },
+      });
+    }
+
+    // Row bottom border
+    slide3.addShape(pptx.ShapeType.line, {
+      x: TABLE_LEFT, y: rowY + ROW_H,
+      w: TABLE_W, h: 0.001,
+      line: { color: "D0D0D0", pt: 0.5 },
     });
-  } else {
-    // Bar: starts right after COL2_X with a small indent
-    const BAR_X      = COL2_X + 0.08;
-    const BAR_Y      = rowY + (ROW_H - 0.09) / 2; // vertically centered
-    const BAR_H      = 0.09;
-    const PX_PER_CNT = 0.38; // inches per unit count
-    const barW       = count * PX_PER_CNT;
 
-    slide3.addShape(pptx.ShapeType.rect, {
-      x: BAR_X, y: BAR_Y, w: barW, h: BAR_H,
-      fill: { color: "0055D4" }, line: { pt: 0 },
+    // Question label
+    slide3.addText(item.question, {
+      x: TABLE_LEFT + 0.06, y: rowY + 0.01, w: COL1_W - 0.08, h: ROW_H - 0.02,
+      fontFace: "Segoe UI", fontSize: 7.8, color: "222222",
+      margin: 0, valign: "middle", fit: "shrink",
     });
 
-    slide3.addText(`${count}`, {
-      x: BAR_X + barW + 0.07, y: rowY + 0.01, w: 0.4, h: ROW_H - 0.02,
-      fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
-      margin: 0, valign: "middle", align: "left",
-    });
-  }
-});
+    if (count === 0) {
+      slide3.addText("0", {
+        x: COL2_X + 0.08, y: rowY + 0.01, w: 0.5, h: ROW_H - 0.02,
+        fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
+        margin: 0, valign: "middle", align: "left",
+      });
+    } else {
+      const BAR_X = COL2_X + 0.08;
+      const BAR_H = Math.min(0.09, ROW_H * 0.45);     // bar height scales with row
+      const BAR_Y = rowY + (ROW_H - BAR_H) / 2;
+      const PX_PER_CNT = 0.38;
+      const barW = count * PX_PER_CNT;
 
-// ── Note box ───────────────────────────────────────────────────────────────
+      slide3.addShape(pptx.ShapeType.rect, {
+        x: BAR_X, y: BAR_Y, w: barW, h: BAR_H,
+        fill: { color: "0055D4" }, line: { pt: 0 },
+      });
 
-const NOTE_X = 7.18;
-const NOTE_Y = 3.48;
-const NOTE_W = 3.85;
+      slide3.addText(`${count}`, {
+        x: BAR_X + barW + 0.07, y: rowY + 0.01, w: 0.4, h: ROW_H - 0.02,
+        fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
+        margin: 0, valign: "middle", align: "left",
+      });
+    }
+  });
 
-// ================= HEADER =================
-slide3.addShape(pptx.ShapeType.rect, {
-  x: NOTE_X,
-  y: NOTE_Y,
-  w: NOTE_W,
-  h: 0.26,
-  fill: { color: "A6A6A6" },
-  line: { color: "A6A6A6", pt: 0.5 },
-});
+  // ── NOTE BOX ──────────────────────────────────────────────────────────────
+  // Fixed position on right side; vertically centred in the lower half.
+  // NOTE_Y = 3.48 keeps it away from the header/logo area and matches design.
+  const NOTE_X = 6.95;
+  const NOTE_Y = 3.48;
+  const NOTE_W = 3.55;
+  const NOTE_HDR_H = 0.26;
+  const NOTE_BODY_Y = NOTE_Y + NOTE_HDR_H;
+  // Body stretches down to just above the footer (leaves 0.10" gap)
+  const NOTE_BODY_H = FOOTER_TOP - NOTE_BODY_Y - 0.10;
 
-slide3.addText("Note", {
-  x: NOTE_X + 0.10,
-  y: NOTE_Y + 0.01,
-  w: 0.6,
-  h: 0.18,
-  fontFace: "Segoe UI",
-  fontSize: 8.5,
-  bold: true,
-  color: "FFFFFF",
-  margin: 0,
-  valign: "middle",
-});
+  // Header bar
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: NOTE_X, y: NOTE_Y, w: NOTE_W, h: NOTE_HDR_H,
+    fill: { color: "A6A6A6" }, line: { color: "A6A6A6", pt: 0.5 },
+  });
 
-// ================= BODY =================
-const NOTE_BODY_Y = NOTE_Y + 0.26;
-const NOTE_BODY_H = 2.35;
+  slide3.addText("Note", {
+    x: NOTE_X + 0.10, y: NOTE_Y + 0.01, w: 0.6, h: NOTE_HDR_H - 0.02,
+    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "FFFFFF",
+    margin: 0, valign: "middle",
+  });
 
-slide3.addShape(pptx.ShapeType.rect, {
-  x: NOTE_X,
-  y: NOTE_BODY_Y,
-  w: NOTE_W,
-  h: NOTE_BODY_H,
-  fill: { color: "F2F2F2" },
-  line: { color: "D9D9D9", pt: 0.5 },
-});
+  // Body background
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: NOTE_X, y: NOTE_BODY_Y, w: NOTE_W, h: NOTE_BODY_H,
+    fill: { color: "F2F2F2" }, line: { color: "D9D9D9", pt: 0.5 },
+  });
 
-// ================= BODY TEXT =================
-slide3.addText(
-  [
-    {
-      text: "Insufficient Exposure",
-      options: { bold: false },
-    },
-    {
-      text:
-        " is what a rater selects when they feel they have not seen sufficient evidence from you on this behavior to provide a rating. These answers are set ",
-      options: {},
-    },
-    {
-      text: "aside",
-      options: {
-        underline: true as any,
-        color: "0563C1",
+  // Body text
+  slide3.addText(
+    [
+      { text: "Insufficient Exposure", options: { bold: false } },
+      {
+        text: " is what a rater selects when they feel they have not seen sufficient evidence from you on this behavior to provide a rating. These answers are set ",
+        options: {},
       },
-    },
+      { text: "aside", options: { underline: true as any, color: "0563C1" } },
+      {
+        text: " and they do not lower your score.\n\nA high count can itself be a signal as it can mean a behavior is not be visible to the people around you, even if you feel you are demonstrating it.\n\nIf you have areas with high insufficient exposure, we recommend you consider why you are receiving this feedback and what you could do to address this.",
+        options: {},
+      },
+    ],
     {
-      text:
-        " and they do not lower your score.\n\nA high count can itself be a signal as it can mean a behavior is not be visible to the people around you, even if you feel you are demonstrating it.\n\nIf you have areas with high insufficient exposure, we recommend you consider why you are receiving this feedback and what you could do to address this.",
-      options: {},
-    },
-  ],
-  {
-    x: NOTE_X + 0.10,
-    y: NOTE_BODY_Y + 0.08,
-    w: NOTE_W - 0.18,
-    h: NOTE_BODY_H - 0.12,
+      x: NOTE_X + 0.10,
+      y: NOTE_BODY_Y + 0.08,
+      w: NOTE_W - 0.18,
+      h: NOTE_BODY_H - 0.14,
+      fontFace: "Segoe UI",
+      fontSize: 8.3,
+      color: "333333",
+      margin: 0,
+      breakLine: true,
+      valign: "top",
+      fit: "shrink",
+    }
+  );
 
-    fontFace: "Segoe UI",
-    fontSize: 8.3,
-    color: "333333",
-
-    margin: 0,
-    breakLine: true,
-    valign: "top",
-
-   
-    fit: "shrink",
-  }
-);
-
-// ── Footer ─────────────────────────────────────────────────────────────────
-// slide3.addText("Leadership Assessments  |  Ericsson  |  Page 12", {
-//   x: 0.25, y: 7.20, w: 6.0, h: 0.22,
-//   fontFace: "Segoe UI", fontSize: 7, color: "888888", margin: 0, valign: "middle",
-// });
-
-// Footer
-addFooterToSlide(slide3, pptx, participantName, footerDate,6, 10.80, 7.10, 2.30, 0.28);
-
-  //////////////////////////////////////////////////////
-  // SLIDE 5 — SELF / OTHER
-  //////////////////////////////////////////////////////
-
+  addFooterToSlide(slide3, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+export function createSlideSelfOther(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
   const slide5 = pptx.addSlide();
   slide5.background = { color: "FFFFFF" };
   addLogoToSlide(slide5, false);
-
 
   slide5.addText("Self / other", {
     x: 0.38, y: 0.15, w: 8, h: 0.5,
@@ -1019,7 +906,7 @@ addFooterToSlide(slide3, pptx, participantName, footerDate,6, 10.80, 7.10, 2.30,
   cards.forEach((card, idx) => {
     const cardX = startX + idx * (cardW + cardGap);
     const HEADER_H = 0.75;
-    const BODY_H = 4.3;
+    const BODY_H = 3.0;
 
     // Header (Blue)
     slide5.addShape(pptx.ShapeType.rect, {
@@ -1055,169 +942,130 @@ addFooterToSlide(slide3, pptx, participantName, footerDate,6, 10.80, 7.10, 2.30,
     });
   });
 
-  // slide5.addText("Additional detail in appendix", {
-  //   x: 0.38, y: 7.1, w: 4, h: 0.3,
-  //   fontFace: "Segoe UI", fontSize: 11, color: "111111", margin: 0,
-  // });
-
-  // Footer for Self / Other
-  addFooterToSlide(slide5, pptx, participantName, footerDate,7, 10.80, 7.10, 2.30, 0.28);
-
-  //////////////////////////////////////////////////////
-  // SLIDE 6 — QUALITATIVE FEEDBACK
-  //////////////////////////////////////////////////////
-const slide6 = pptx.addSlide();
-
-slide6.background = { color: "F3F3F3" };
-addLogoToSlide(slide6, false);
-
-// ================= TITLE =================
-slide6.addText("Qualitative feedback", {
-  x: 0.28,
-  y: 0.18,
-  w: 5.5,
-  h: 0.45,
-  fontFace: "Segoe UI Light",
-  fontSize: 29,
-  color: "111111",
-  margin: 0,
-});
-
-// ================= SUBTITLE =================
-slide6.addText(
-  "This page summarises key themes from the qualitative feedback your respondents provided.",
-  {
-    x: 0.3,
-    y: 0.82,
-    w: 7.8,
-    h: 0.2,
-    fontFace: "Segoe UI",
-    fontSize: 10.5,
-    color: "20354B",
-    margin: 0,
-  }
-);
-
-// ================= LAYOUT =================
-const qualCardW = 5.45;
-const qualCardGap = 0.12;
-const qualStartX = 0.22;
-const qualCardStartY = 1.25;
-
-const qualCards = [
-  {
-    header: "Perceived areas of strength",
-
-    description:
-      "You are perceived as operating across boundaries with credibility - colleagues describe this as your most distinctive contribution.",
-
-    bullets: [
-      "Seen as bringing the right stakeholders in early, which is felt to reduce rework and accelerate decisions.",
-
-      "Perceived as trusted across functions, including on difficult topics.",
-
-      "Experienced as setting direction with clarity - colleagues note they leave meetings clear on what was agreed and who owns what.",
-
-      "Described as thinking at the system level, not only within your own area.",
-    ],
-  },
-
-  {
-    header: "Perceived areas of improvement",
-
-    description:
-      "Your support is perceived as genuine but reactive. Development of others appears to be the clearest opportunity for improvement.",
-
-    bullets: [
-      "Feedback is felt to follow a request rather than being offered proactively.",
-
-      "Recognised potential is not always seen as translated into a clear stretch or development plan.",
-
-      "Priorities are perceived as set clearly, but follow-through on standards is reported as less visible.",
-
-      "Low-value work is seen as continuing past its useful life.",
-    ],
-  },
-];
-
-// ================= CARDS =================
-qualCards.forEach((card, idx) => {
-
-  const cardX = qualStartX + idx * (qualCardW + qualCardGap);
-
-  const HEADER_H = 0.42;
-  const BODY_H = 4.65;
-
-  // ===== MAIN CARD =====
-  slide6.addShape(pptx.ShapeType.roundRect, {
-    x: cardX,
-    y: qualCardStartY,
-    w: qualCardW,
-    h: BODY_H,
-    rectRadius: 0.12,
-    fill: { color: "E7E7ED" },
-    line: { color: "E7E7ED", pt: 0 },
-  });
-
-  // ===== HEADER =====
-  slide6.addShape(pptx.ShapeType.rect, {
-    x: cardX,
-    y: qualCardStartY,
-    w: qualCardW,
-    h: HEADER_H,
-    fill: { color: "1F73E8" },
-    line: { color: "1F73E8", pt: 0 },
-  });
-
-  // ===== HEADER TEXT =====
-  slide6.addText(card.header, {
-    x: cardX + 0.12,
-    y: qualCardStartY + 0.07,
-    w: qualCardW - 0.25,
-    h: 0.18,
-    fontFace: "Segoe UI",
-    fontSize: 13,
-    color: "FFFFFF",
-    margin: 0,
-  });
-
-  // ===== DESCRIPTION =====
-  slide6.addText(card.description, {
-    x: cardX + 0.16,
-    y: qualCardStartY + 0.58,
-    w: qualCardW - 0.35,
-    h: 0.55,
+    slide5.addText("Additional detail in appendix", {
+    x: 0.2,
+    y: 5.95,
+    w: 2.5,
+    h: 0.16,
     fontFace: "Segoe UI",
     fontSize: 10,
     color: "222222",
-    breakLine: true,
     margin: 0,
-    valign: "top",
   });
 
-  // ===== BULLETS =====
-  let bulletY = qualCardStartY + 1.55;
 
-  card.bullets.forEach((bullet) => {
+  addFooterToSlide(slide5, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-    // Bullet dot
-    slide6.addText("•", {
-      x: cardX + 0.15,
-      y: bulletY + 0.01,
-      w: 0.1,
-      h: 0.1,
+export function createSlideQualitativeFeedback(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide6 = pptx.addSlide();
+  slide6.background = { color: "F3F3F3" };
+  addLogoToSlide(slide6, false);
+
+  // TITLE
+  slide6.addText("Qualitative feedback", {
+    x: 0.28,
+    y: 0.18,
+    w: 5.5,
+    h: 0.45,
+    fontFace: "Segoe UI Light",
+    fontSize: 29,
+    color: "111111",
+    margin: 0,
+  });
+
+  // SUBTITLE
+  slide6.addText(
+    "This page summarises key themes from the qualitative feedback your respondents provided.",
+    {
+      x: 0.3,
+      y: 0.82,
+      w: 7.8,
+      h: 0.2,
       fontFace: "Segoe UI",
-      fontSize: 10,
-      color: "111111",
+      fontSize: 10.5,
+      color: "20354B",
+      margin: 0,
+    }
+  );
+
+  // LAYOUT
+  const qualCardW = 5.45;
+  const qualCardGap = 0.12;
+  const qualStartX = 0.22;
+  const qualCardStartY = 1.25;
+
+  const qualCards = [
+    {
+      header: "Perceived areas of strength",
+      description:
+        "You are perceived as operating across boundaries with credibility - colleagues describe this as your most distinctive contribution.",
+      bullets: [
+        "Seen as bringing the right stakeholders in early, which is felt to reduce rework and accelerate decisions.",
+        "Perceived as trusted across functions, including on difficult topics.",
+        "Experienced as setting direction with clarity - colleagues note they leave meetings clear on what was agreed and who owns what.",
+        "Described as thinking at the system level, not only within your own area.",
+      ],
+    },
+    {
+      header: "Perceived areas of improvement",
+      description:
+        "Your support is perceived as genuine but reactive. Development of others appears to be the clearest opportunity for improvement.",
+      bullets: [
+        "Feedback is felt to follow a request rather than being offered proactively.",
+        "Recognised potential is not always seen as translated into a clear stretch or development plan.",
+        "Priorities are perceived as set clearly, but follow-through on standards is reported as less visible.",
+        "Low-value work is seen as continuing past its useful life.",
+      ],
+    },
+  ];
+
+  // CARDS
+  qualCards.forEach((card, idx) => {
+    const cardX = qualStartX + idx * (qualCardW + qualCardGap);
+    const HEADER_H = 0.42;
+    const BODY_H = 4.65;
+
+    // MAIN CARD
+    slide6.addShape(pptx.ShapeType.roundRect, {
+      x: cardX,
+      y: qualCardStartY,
+      w: qualCardW,
+      h: BODY_H,
+      rectRadius: 0.12,
+      fill: { color: "E7E7ED" },
+      line: { color: "E7E7ED", pt: 0 },
+    });
+
+    // HEADER
+    slide6.addShape(pptx.ShapeType.rect, {
+      x: cardX,
+      y: qualCardStartY,
+      w: qualCardW,
+      h: HEADER_H,
+      fill: { color: "1F73E8" },
+      line: { color: "1F73E8", pt: 0 },
+    });
+
+    // HEADER TEXT
+    slide6.addText(card.header, {
+      x: cardX + 0.12,
+      y: qualCardStartY + 0.07,
+      w: qualCardW - 0.25,
+      h: 0.18,
+      fontFace: "Segoe UI",
+      fontSize: 13,
+      color: "FFFFFF",
       margin: 0,
     });
 
-    // Bullet text
-    slide6.addText(bullet, {
-      x: cardX + 0.38,
-      y: bulletY,
-      w: qualCardW - 0.65,
-      h: 0.48,
+    // DESCRIPTION
+    slide6.addText(card.description, {
+      x: cardX + 0.16,
+      y: qualCardStartY + 0.58,
+      w: qualCardW - 0.35,
+      h: 0.55,
       fontFace: "Segoe UI",
       fontSize: 10,
       color: "222222",
@@ -1226,137 +1074,57 @@ qualCards.forEach((card, idx) => {
       valign: "top",
     });
 
-    bulletY += 0.72;
+    // BULLETS
+    let bulletY = qualCardStartY + 1.55;
+
+    card.bullets.forEach((bullet) => {
+      // Bullet dot
+      slide6.addText("•", {
+        x: cardX + 0.15,
+        y: bulletY + 0.01,
+        w: 0.1,
+        h: 0.1,
+        fontFace: "Segoe UI",
+        fontSize: 10,
+        color: "111111",
+        margin: 0,
+      });
+
+      // Bullet text
+      slide6.addText(bullet, {
+        x: cardX + 0.38,
+        y: bulletY,
+        w: qualCardW - 0.65,
+        h: 0.48,
+        fontFace: "Segoe UI",
+        fontSize: 10,
+        color: "222222",
+        breakLine: true,
+        margin: 0,
+        valign: "top",
+      });
+
+      bulletY += 0.72;
+    });
   });
-});
 
-// ================= ADDITIONAL DETAIL =================
-slide6.addText("Additional detail in appendix", {
-  x: 0.2,
-  y: 5.95,
-  w: 2.5,
-  h: 0.16,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  color: "222222",
-  margin: 0,
-});
+  // ADDITIONAL DETAIL
+  slide6.addText("Additional detail in appendix", {
+    x: 0.2,
+    y: 5.95,
+    w: 2.5,
+    h: 0.16,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    color: "222222",
+    margin: 0,
+  });
 
+  addFooterToSlide(slide6, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide6,
-  pptx,
-  participantName,
-  footerDate,
-  8,
-  10.80,
-  7.10,
-  2.30,
-  0.28
-);
-  //////////////////////////////////////////////////////
-  // SLIDE 7 — COACHING QUADRANT (commented out for now)
-  //////////////////////////////////////////////////////
-  // slide6.background = { color: "FFFFFF" };
-
-  // slide6.addText("360 results: Coaching quadrant", {
-  //   x: 0.38, y: 0.15, w: 8, h: 0.6,
-  //   fontFace: "Segoe UI Semibold", fontSize: 32, color: "1C2B4B", margin: 0,
-  // });
-
-  // const THRESHOLD = 70;
-  // const quadrants = {
-  //   underRecognized: [] as string[],
-  //   sharedDevelopment: [] as string[],
-  //   sharedStrengths: [] as string[],
-  //   blindSpots: [] as string[]
-  // };
-
-  // analytics.forEach((item, idx) => {
-  //   const s = selfAnalytics[idx]?.rawAverage || 0;
-  //   const o = othersAnalytics[idx]?.rawAverage || 0;
-  //   const qText = item.question;
-
-  //   if (s >= THRESHOLD && o >= THRESHOLD) quadrants.sharedStrengths.push(qText);
-  //   else if (s >= THRESHOLD && o < THRESHOLD) quadrants.blindSpots.push(qText);
-  //   else if (s < THRESHOLD && o >= THRESHOLD) quadrants.underRecognized.push(qText);
-  //   else quadrants.sharedDevelopment.push(qText);
-  // });
-
-  // const BOX_W = 4.3;
-  // const BOX_H = 2.4;
-  // const GAP = 0.05;
-  // const QUADRANT_START_X = 0.5;
-  // const QUADRANT_START_Y = 1.3;
-
-  // const renderQuadrant = (title: string, desc: string, items: string[], x: number, y: number, bgColor: string) => {
-  //   slide6.addShape(pptx.ShapeType.rect, {
-  //     x, y, w: BOX_W, h: BOX_H,
-  //     fill: { color: bgColor }, line: { color: "EEEEEE", pt: 0.5 }
-  //   });
-  //   slide6.addText(title, {
-  //     x: x + 0.1, y: y + 0.1, w: BOX_W - 0.2, h: 0.25,
-  //     fontFace: "Segoe UI", fontSize: 13, bold: true, color: "333333"
-  //   });
-  //   slide6.addText(desc, {
-  //     x: x + 0.1, y: y + 0.35, w: BOX_W - 0.2, h: 0.35,
-  //     fontFace: "Segoe UI", fontSize: 11, bold: true, color: "1D6FD8"
-  //   });
-
-  //   const bulletText = items.slice(0, 4).map(it => `• ${it}`).join("\n");
-  //   slide6.addText(bulletText, {
-  //     x: x + 0.1, y: y + 0.8, w: BOX_W - 0.2, h: 1.5,
-  //     fontFace: "Segoe UI", fontSize: 9.5, color: "333333", valign: "top"
-  //   });
-  // };
-
-  // renderQuadrant(
-  //   "Under-recognized strengths",
-  //   "Colleagues see these more consistently than you do.",
-  //   quadrants.underRecognized,
-  //   QUADRANT_START_X, QUADRANT_START_Y, "EFEFEF"
-  // );
-  // renderQuadrant(
-  //   "Shared development areas",
-  //   "You and colleagues both see these as less consistent.",
-  //   quadrants.sharedDevelopment,
-  //   QUADRANT_START_X + BOX_W + GAP, QUADRANT_START_Y, "FFFFFF"
-  // );
-  // renderQuadrant(
-  //   "Shared strengths",
-  //   "You think you show these often, and colleagues broadly agree.",
-  //   quadrants.sharedStrengths,
-  //   QUADRANT_START_X, QUADRANT_START_Y + BOX_H + GAP, "FFFFFF"
-  // );
-  // renderQuadrant(
-  //   "Potential blind spots",
-  //   "You think you show these often, but colleagues do not see them consistently.",
-  //   quadrants.blindSpots,
-  //   QUADRANT_START_X + BOX_W + GAP, QUADRANT_START_Y + BOX_H + GAP, "EFEFEF"
-  // );
-
-  // const labelStyle = { fontFace: "Segoe UI", fontSize: 10, color: "333333", italic: true };
-  // slide6.addText("You consider consistent", { x: 0.1, y: QUADRANT_START_Y + BOX_H - 0.2, w: 0.3, h: 2, rotate: 270, ...labelStyle });
-  // slide6.addText("You don't consider consistent", { x: 0.1, y: QUADRANT_START_Y - 0.2, w: 0.3, h: 2, rotate: 270, ...labelStyle });
-  // slide6.addText("Colleagues see it consistently", { x: QUADRANT_START_X, y: QUADRANT_START_Y + (BOX_H * 2) + 0.1, w: BOX_W, h: 0.3, align: "center", ...labelStyle });
-  // slide6.addText("Colleagues don't see it consistently", { x: QUADRANT_START_X + BOX_W, y: QUADRANT_START_Y + (BOX_H * 2) + 0.1, w: BOX_W, h: 0.3, align: "center", ...labelStyle });
-
-  // slide6.addShape(pptx.ShapeType.rect, {
-  //   x: 7.5, y: 6.8, w: 1.8, h: 0.3,
-  //   fill: { color: "FFFFFF" }, line: { color: "B00000", pt: 1 },
-  // });
-  // slide6.addText(`${form.responses[0]?.participant?.fullName || "PARTICIPANT"} & ${new Date().toLocaleDateString()}`, {
-  //   x: 7.55, y: 6.85, w: 1.7, h: 0.2,
-  //   fontFace: "Segoe UI", fontSize: 7, color: "B00000", bold: true, align: "center",
-  // });
-
-
-  //////////////////////////////////////////////////////
-  // APPENDIX — HOW THE SCORE IS CALCULATED
-  //////////////////////////////////////////////////////
-
+export function createSlideScoreCalc(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
   const slideScoreCalc = pptx.addSlide();
   slideScoreCalc.background = { color: "FFFFFF" };
   addLogoToSlide(slideScoreCalc, false);
@@ -1457,13 +1225,11 @@ addFooterToSlide(
     fontFace: "Segoe UI", fontSize: 8.5, italic: true, color: "666666", margin: 0
   });
 
-  // Footer for Score Calc
-  addFooterToSlide(slideScoreCalc, pptx, participantName, footerDate, 9, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slideScoreCalc, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-  //////////////////////////////////////////////////////
-  // APPENDIX — FAQ
-  //////////////////////////////////////////////////////
-
+export function createSlideFAQ(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
   const slideFAQ = pptx.addSlide();
   slideFAQ.background = { color: "FFFFFF" };
   addLogoToSlide(slideFAQ, false);
@@ -1544,613 +1310,506 @@ addFooterToSlide(
     });
   });
 
-  // Footer for FAQ
-  addFooterToSlide(slideFAQ, pptx, participantName, footerDate, 10, 10.80, 7.10, 2.30, 0.28);
+  addFooterToSlide(slideFAQ, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
+export function createSlideVerbatimQuotes(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide11 = pptx.addSlide();
+  slide11.background = { color: "F2F2F2" };
+  addLogoToSlide(slide11, false);
 
-  // -----------------------------------------------------------
-
-
-const slide11 = pptx.addSlide();
-
-slide11.background = { color: "F2F2F2" };
-addLogoToSlide(slide11, false);
-
-// ================= TITLE =================
-slide11.addText(`“${verbatimQuotesData.title}”`, {
-  x: 0.35,
-  y: 0.25,
-  w: 7.8,
-  h: 0.9,
-  fontFace: "Segoe UI",
-  fontSize: 30,
-  color: "222222",
-  margin: 0,
-});
-
-// ================= SECTION TAG =================
-slide11.addShape(pptx.ShapeType.roundRect, {
-  x: 8.85, // moved right
-  y: 0.25,
-  w: 2.15,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "7A7A7A" },
-  line: { color: "7A7A7A" },
-});
-
-slide11.addText(verbatimQuotesData.section, {
-  x: 8.9, // moved right
-  y: 0.32,
-  w: 2.05,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-
-// ================= QUOTES =================
-let yPos = 1.4;
-
-verbatimQuotesData.quotes.forEach((quote) => {
-  slide11.addText(`• ${quote}`, {
-    x: 0.5,
-    y: yPos,
-    w: 11,
-    h: 0.5,
+  // TITLE
+  slide11.addText(`“${verbatimQuotesData.title}”`, {
+    x: 0.35,
+    y: 0.25,
+    w: 7.8,
+    h: 0.9,
     fontFace: "Segoe UI",
-    fontSize: 15,
-    color: "333333",
+    fontSize: 30,
+    color: "222222",
     margin: 0,
-    breakLine: true,
-    valign: "top",
   });
 
-  yPos += 0.72;
-});
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide11,
-  pptx,
-  participantName,
-  footerDate,
-  11,
-10.80, 7.10, 2.30, 0.28
-);
-
-// ---------------------------------------------------------------------
-
-const slide12 = pptx.addSlide();
-
-slide12.background = { color: "F2F2F2" };
-addLogoToSlide(slide12, false);
-
-// ================= TITLE =================
-// ================= TITLE =================
-slide12.addText(`“${positiveImpactData.title}”`, {
-  x: 0.4,
-  y: 0.28,
-  w: 7.2, // reduced width
-  h: 1,
-  fontFace: "Segoe UI",
-  fontSize: 29,
-  color: "222222",
-  margin: 0,
-  breakLine: true,
-});
-
-// ================= SECTION TAG =================
-slide12.addShape(pptx.ShapeType.roundRect, {
-  x: 8.85, // moved right
-  y: 0.25,
-  w: 2.15,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "7A7A7A" },
-  line: { color: "7A7A7A" },
-});
-
-slide12.addText(positiveImpactData.section, {
-  x: 8.9, // moved right
-  y: 0.32,
-  w: 2.05,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-// ================= QUOTES =================
-let yPoss = 1.7;
-
-positiveImpactData.quotes.forEach((quote) => {
-  slide12.addText(`• ${quote}`, {
-    x: 0.52,
-    y: yPoss,
-    w: 11.1,
-    h: 0.32,
-    fontFace: "Segoe UI",
-    fontSize: 14,
-    color: "333333",
-    margin: 0,
-    breakLine: true,
-    valign: "top",
+  // SECTION TAG
+  slide11.addShape(pptx.ShapeType.roundRect, {
+    x: 8.85,
+    y: 0.25,
+    w: 2.15,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "7A7A7A" },
+    line: { color: "7A7A7A" },
   });
 
-  yPoss += 0.5;
-});
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide12,
-  pptx,
-  participantName,
-  footerDate,
-  12,
-  10.80,
-  7.10,
-  2.30,
-  0.28
-);
-
-// ------------------------------------------------------------
-
-
-const slide13 = pptx.addSlide();
-
-slide13.background = { color: "F2F2F2" };
-addLogoToSlide(slide13, false);
-
-// ================= TITLE =================
-slide13.addText(`“${leadershipImpactData.title}”`, {
-  x: 0.35,
-  y: 0.22,
-  w: 7.8,
-  h: 1,
-  fontFace: "Segoe UI",
-  fontSize: 29,
-  color: "222222",
-  margin: 0,
-  breakLine: true,
-});
-
-// ================= SECTION TAG =================
-slide13.addShape(pptx.ShapeType.roundRect, {
-  x: 8.85, // moved right
-  y: 0.25,
-  w: 2.15,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "7A7A7A" },
-  line: { color: "7A7A7A" },
-});
-
-slide13.addText(leadershipImpactData.section, {
-  x: 8.9, // moved right
-  y: 0.32,
-  w: 2.05,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-// ================= QUOTES =================
-let yPo = 1.55;
-
-leadershipImpactData.quotes.forEach((quote) => {
-  slide13.addText(`• ${quote}`, {
-    x: 0.45,
-    y: yPo,
-    w: 11.1,
-    h: 0.32,
-    fontFace: "Segoe UI",
-    fontSize: 14,
-    color: "333333",
-    margin: 0,
-    breakLine: true,
-    valign: "top",
-  });
-
-  yPo += 0.52;
-});
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide13,
-  pptx,
-  participantName,
-  footerDate,
-  13,
-  10.80,
-  7.10,
-  2.30,
-  0.28
-);
-
-// -------------------------------------------------------------
-
-
-
-const slide14 = pptx.addSlide();
-
-slide14.background = { color: "F2F2F2" };
-addLogoToSlide(slide14, false);
-
-// ================= TITLE =================
-slide14.addText(`“${personalDevelopmentPlanData.title}”`, {
-  x: 0.35,
-  y: 0.22,
-  w: 7.8,
-  h: 1,
-  fontFace: "Segoe UI",
-  fontSize: 29,
-  color: "222222",
-  margin: 0,
-  breakLine: true,
-});
-
-// ================= SECTION TAG =================
-slide14.addShape(pptx.ShapeType.roundRect, {
-  x: 8.85, // moved right
-  y: 0.25,
-  w: 2.15,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "C40000" },
-  line: { color: "C40000" },
-});
-
-slide14.addText(personalDevelopmentPlanData.section, {
-  x: 8.9, // moved right
-  y: 0.32,
-  w: 2.05,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-
-// ================= PROFESSIONAL GOALS HEADER =================
-slide14.addShape(pptx.ShapeType.rect, {
-  x: 0.12,
-  y: 1.25,
-  w: 11.2,
-  h: 0.3,
-  fill: { color: "102B46" },
-  line: { color: "102B46" },
-});
-
-slide14.addText(
-  [
-    {
-      text: "Professional Goals ",
-      options: { bold: true }
-    },
-    {
-      text:
-        "What outcomes do you want to deliver over the next 12 months?",
-      options: { italic: true }
-    }
-  ],
-  {
-    x: 0.2,
-    y: 1.3,
-    w: 7,
+  slide11.addText(verbatimQuotesData.section, {
+    x: 8.9,
+    y: 0.32,
+    w: 2.05,
     h: 0.15,
     fontFace: "Segoe UI",
     fontSize: 10,
+    bold: true,
     color: "FFFFFF",
+    align: "center",
     margin: 0,
-  }
-);
+  });
 
-// ================= PROFESSIONAL GOALS TABLE =================
-slide14.addTable(
-  [
-    [
-      {
-        text: "Within your BU or Function",
-        options: { bold: true }
-      },
-      {
-        text: "Across the Organization",
-        options: { bold: true }
-      }
-    ],
+  // QUOTES
+  let yPos = 1.4;
 
-    [
-      {
-        text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}`
-      },
-      {
-        text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}`
-      }
-    ],
+  verbatimQuotesData.quotes.forEach((quote) => {
+    slide11.addText(`• ${quote}`, {
+      x: 0.5,
+      y: yPos,
+      w: 11,
+      h: 0.5,
+      fontFace: "Segoe UI",
+      fontSize: 15,
+      color: "333333",
+      margin: 0,
+      breakLine: true,
+      valign: "top",
+    });
 
-    [
-      {
-        text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}`
-      },
-      {
-        text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}`
-      }
-    ],
+    yPos += 0.72;
+  });
 
-    [
-      {
-        text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}`
-      },
-      {
-        text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}`
-      }
-    ]
-  ],
-  {
-    x: 0.12,
-    y: 1.55,
-    w: 11.2,
+  addFooterToSlide(slide11, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+
+export function createSlidePositiveImpact(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide12 = pptx.addSlide();
+  slide12.background = { color: "F2F2F2" };
+  addLogoToSlide(slide12, false);
+
+  // TITLE
+  slide12.addText(`“${positiveImpactData.title}”`, {
+    x: 0.4,
+    y: 0.28,
+    w: 7.2,
     h: 1,
-
-    border: {
-      type: "solid",
-      pt: 1,
-      color: "8A8A8A"
-    },
-
     fontFace: "Segoe UI",
-    fontSize: 10,
-    color: "333333",
+    fontSize: 29,
+    color: "222222",
+    margin: 0,
+    breakLine: true,
+  });
 
-    fill: {
-  color: "F2F2F2"
-},
+  // SECTION TAG
+  slide12.addShape(pptx.ShapeType.roundRect, {
+    x: 8.85,
+    y: 0.25,
+    w: 2.15,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "7A7A7A" },
+    line: { color: "7A7A7A" },
+  });
 
-    margin: 0.08,
-
-    colW: [5.5, 5.7]
-  }
-);
-
-// ================= BEHAVIOR DEVELOPMENT HEADER =================
-slide14.addShape(pptx.ShapeType.rect, {
-  x: 0.12,
-  y: 3.05,
-  w: 11.2,
-  h: 0.3,
-  fill: { color: "102B46" },
-  line: { color: "102B46" },
-});
-
-slide14.addText(
-  [
-    {
-      text: "Behavior Development ",
-      options: { bold: true }
-    },
-    {
-      text:
-        "Pick two or three behaviors to build. What does success look like, and how will you know?",
-      options: { italic: true }
-    }
-  ],
-  {
-    x: 0.2,
-    y: 3.1,
-    w: 9,
+  slide12.addText(positiveImpactData.section, {
+    x: 8.9,
+    y: 0.32,
+    w: 2.05,
     h: 0.15,
     fontFace: "Segoe UI",
     fontSize: 10,
+    bold: true,
     color: "FFFFFF",
+    align: "center",
     margin: 0,
-  }
-);
+  });
 
-// ================= BEHAVIOR TABLE =================
-slide14.addTable(
-  [
-    personalDevelopmentPlanData.behaviorDevelopment.headers,
+  // QUOTES
+  let yPoss = 1.7;
 
-    ...personalDevelopmentPlanData.behaviorDevelopment.rows
-  ],
-  {
+  positiveImpactData.quotes.forEach((quote) => {
+    slide12.addText(`• ${quote}`, {
+      x: 0.52,
+      y: yPoss,
+      w: 11.1,
+      h: 0.32,
+      fontFace: "Segoe UI",
+      fontSize: 14,
+      color: "333333",
+      margin: 0,
+      breakLine: true,
+      valign: "top",
+    });
+
+    yPoss += 0.5;
+  });
+
+  addFooterToSlide(slide12, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+
+export function createSlideLeadershipImpact(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide13 = pptx.addSlide();
+  slide13.background = { color: "F2F2F2" };
+  addLogoToSlide(slide13, false);
+
+  // TITLE
+  slide13.addText(`“${leadershipImpactData.title}”`, {
+    x: 0.35,
+    y: 0.22,
+    w: 7.8,
+    h: 1,
+    fontFace: "Segoe UI",
+    fontSize: 29,
+    color: "222222",
+    margin: 0,
+    breakLine: true,
+  });
+
+  // SECTION TAG
+  slide13.addShape(pptx.ShapeType.roundRect, {
+    x: 8.85,
+    y: 0.25,
+    w: 2.15,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "7A7A7A" },
+    line: { color: "7A7A7A" },
+  });
+
+  slide13.addText(leadershipImpactData.section, {
+    x: 8.9,
+    y: 0.32,
+    w: 2.05,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    bold: true,
+    color: "FFFFFF",
+    align: "center",
+    margin: 0,
+  });
+
+  // QUOTES
+  let yPo = 1.55;
+
+  leadershipImpactData.quotes.forEach((quote) => {
+    slide13.addText(`• ${quote}`, {
+      x: 0.45,
+      y: yPo,
+      w: 11.1,
+      h: 0.32,
+      fontFace: "Segoe UI",
+      fontSize: 14,
+      color: "333333",
+      margin: 0,
+      breakLine: true,
+      valign: "top",
+    });
+
+    yPo += 0.52;
+  });
+
+  addFooterToSlide(slide13, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+
+export function createSlidePDP(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide14 = pptx.addSlide();
+  slide14.background = { color: "F2F2F2" };
+  addLogoToSlide(slide14, false);
+
+  // TITLE
+  slide14.addText(`“${personalDevelopmentPlanData.title}”`, {
+    x: 0.35,
+    y: 0.22,
+    w: 7.8,
+    h: 1,
+    fontFace: "Segoe UI",
+    fontSize: 29,
+    color: "222222",
+    margin: 0,
+    breakLine: true,
+  });
+
+  // SECTION TAG
+  slide14.addShape(pptx.ShapeType.roundRect, {
+    x: 8.85,
+    y: 0.25,
+    w: 2.15,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "C40000" },
+    line: { color: "C40000" },
+  });
+
+  slide14.addText(personalDevelopmentPlanData.section, {
+    x: 8.9,
+    y: 0.32,
+    w: 2.05,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    bold: true,
+    color: "FFFFFF",
+    align: "center",
+    margin: 0,
+  });
+
+  // PROFESSIONAL GOALS HEADER
+  slide14.addShape(pptx.ShapeType.rect, {
     x: 0.12,
-    y: 3.35,
+    y: 1.25,
     w: 11.2,
-    h: 1.3,
+    h: 0.3,
+    fill: { color: "102B46" },
+    line: { color: "102B46" },
+  });
 
-    border: {
-      type: "solid",
-      pt: 1,
-      color: "8A8A8A"
-    },
-
-    fontFace: "Segoe UI",
-    fontSize: 10,
-    color: "333333",
-
-   fill: {
-  color: "F2F2F2"
-},
-
-    margin: 0.08,
-
-    colW: [1.65, 3.6, 5.95]
-  }
-);
-
-// ================= ACTION PLAN HEADER =================
-slide14.addShape(pptx.ShapeType.rect, {
-  x: 0.12,
-  y: 5.05,
-  w: 5.6,
-  h: 0.3,
-  fill: { color: "102B46" },
-  line: { color: "102B46" },
-});
-
-slide14.addText(
-  [
-    {
-      text: "Action Plan ",
-      options: { bold: true }
-    },
-    {
-      text:
-        "What will you do in the next 30 days to start building these behaviors?",
-      options: { italic: true }
-    }
-  ],
-  {
-    x: 0.2,
-    y: 5.1,
-    w: 5.2,
-    h: 0.15,
-    fontFace: "Segoe UI",
-    fontSize: 9,
-    color: "FFFFFF",
-    margin: 0,
-  }
-);
-
-// ================= STAKEHOLDER HEADER =================
-slide14.addShape(pptx.ShapeType.rect, {
-  x: 5.72,
-  y: 5.05,
-  w: 5.6,
-  h: 0.3,
-  fill: { color: "102B46" },
-  line: { color: "102B46" },
-});
-
-slide14.addText(
-  [
-    {
-      text: "Stakeholders & Support ",
-      options: { bold: true }
-    },
-    {
-      text:
-        "Who do you need to engage, and what help will you ask for?",
-      options: { italic: true }
-    }
-  ],
-  {
-    x: 5.82,
-    y: 5.1,
-    w: 5.1,
-    h: 0.15,
-    fontFace: "Segoe UI",
-    fontSize: 9,
-    color: "FFFFFF",
-    margin: 0,
-  }
-);
-
-// ================= ACTION / STAKEHOLDER TABLE =================
-slide14.addTable(
-  [
+  slide14.addText(
     [
-      personalDevelopmentPlanData.actionPlan.items[0],
-      personalDevelopmentPlanData.stakeholders.items[0]
-    ]
-  ],
-  {
+      {
+        text: "Professional Goals ",
+        options: { bold: true }
+      },
+      {
+        text:
+          "What outcomes do you want to deliver over the next 12 months?",
+        options: { italic: true }
+      }
+    ],
+    {
+      x: 0.2,
+      y: 1.3,
+      w: 7,
+      h: 0.15,
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "FFFFFF",
+      margin: 0,
+    }
+  );
+
+  // PROFESSIONAL GOALS TABLE
+  slide14.addTable(
+    [
+      [
+        {
+          text: "Within your BU or Function",
+          options: { bold: true }
+        },
+        {
+          text: "Across the Organization",
+          options: { bold: true }
+        }
+      ],
+      [
+        {
+          text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}`
+        },
+        {
+          text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}`
+        }
+      ],
+      [
+        {
+          text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}`
+        },
+        {
+          text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}`
+        }
+      ],
+      [
+        {
+          text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}`
+        },
+        {
+          text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}`
+        }
+      ]
+    ],
+    {
+      x: 0.12,
+      y: 1.55,
+      w: 11.2,
+      h: 1,
+      border: {
+        type: "solid",
+        pt: 1,
+        color: "8A8A8A"
+      },
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "333333",
+      fill: {
+        color: "F2F2F2"
+      },
+      margin: 0.08,
+      colW: [5.5, 5.7]
+    }
+  );
+
+  // BEHAVIOR DEVELOPMENT HEADER
+  slide14.addShape(pptx.ShapeType.rect, {
     x: 0.12,
-    y: 5.35,
+    y: 3.05,
     w: 11.2,
-    h: 0.5,
+    h: 0.3,
+    fill: { color: "102B46" },
+    line: { color: "102B46" },
+  });
 
-    border: {
-      type: "solid",
-      pt: 1,
-      color: "8A8A8A"
-    },
+  slide14.addText(
+    [
+      {
+        text: "Behavior Development ",
+        options: { bold: true }
+      },
+      {
+        text:
+          "Pick two or three behaviors to build. What does success look like, and how will you know?",
+        options: { italic: true }
+      }
+    ],
+    {
+      x: 0.2,
+      y: 3.1,
+      w: 9,
+      h: 0.15,
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "FFFFFF",
+      margin: 0,
+    }
+  );
 
-    fontFace: "Segoe UI",
-    fontSize: 10,
-    color: "333333",
+  // BEHAVIOR TABLE
+  slide14.addTable(
+    [
+      personalDevelopmentPlanData.behaviorDevelopment.headers,
+      ...personalDevelopmentPlanData.behaviorDevelopment.rows
+    ],
+    {
+      x: 0.12,
+      y: 3.35,
+      w: 11.2,
+      h: 1.3,
+      border: {
+        type: "solid",
+        pt: 1,
+        color: "8A8A8A"
+      },
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "333333",
+      fill: {
+        color: "F2F2F2"
+      },
+      margin: 0.08,
+      colW: [1.65, 3.6, 5.95]
+    }
+  );
 
-    fill: {
-  color: "F2F2F2"
-},
+  // ACTION PLAN HEADER
+  slide14.addShape(pptx.ShapeType.rect, {
+    x: 0.12,
+    y: 5.05,
+    w: 5.6,
+    h: 0.3,
+    fill: { color: "102B46" },
+    line: { color: "102B46" },
+  });
 
-    margin: 0.08,
+  slide14.addText(
+    [
+      {
+        text: "Action Plan ",
+        options: { bold: true }
+      },
+      {
+        text:
+          "What will you do in the next 30 days to start building these behaviors?",
+        options: { italic: true }
+      }
+    ],
+    {
+      x: 0.2,
+      y: 5.1,
+      w: 5.2,
+      h: 0.15,
+      fontFace: "Segoe UI",
+      fontSize: 9,
+      color: "FFFFFF",
+      margin: 0,
+    }
+  );
 
-    colW: [5.6, 5.6]
-  }
-);
+  // STAKEHOLDER HEADER
+  slide14.addShape(pptx.ShapeType.rect, {
+    x: 5.72,
+    y: 5.05,
+    w: 5.6,
+    h: 0.3,
+    fill: { color: "102B46" },
+    line: { color: "102B46" },
+  });
 
+  slide14.addText(
+    [
+      {
+        text: "Stakeholders & Support ",
+        options: { bold: true }
+      },
+      {
+        text:
+          "Who do you need to engage, and what help will you ask for?",
+        options: { italic: true }
+      }
+    ],
+    {
+      x: 5.82,
+      y: 5.1,
+      w: 5.1,
+      h: 0.15,
+      fontFace: "Segoe UI",
+      fontSize: 9,
+      color: "FFFFFF",
+      margin: 0,
+    }
+  );
 
+  // ACTION / STAKEHOLDER TABLE
+  slide14.addTable(
+    [
+      [
+        personalDevelopmentPlanData.actionPlan.items[0],
+        personalDevelopmentPlanData.stakeholders.items[0]
+      ]
+    ],
+    {
+      x: 0.12,
+      y: 5.35,
+      w: 11.2,
+      h: 0.5,
+      border: {
+        type: "solid",
+        pt: 1,
+        color: "8A8A8A"
+      },
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "333333",
+      fill: {
+        color: "F2F2F2"
+      },
+      margin: 0.08,
+      colW: [5.6, 5.6]
+    }
+  );
 
-// ================= FOOTER =================
-addFooterToSlide(
-  slide14,
-  pptx,
-  participantName,
-  footerDate,
-  14,
-10.80, 7.10, 2.30, 0.28
-);
+  addFooterToSlide(slide14, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-// --------------------------------------------------------------
-
-
-
-const slide15 = pptx.addSlide();
-
-slide15.background = { color: "F2F2F2" };
-addLogoToSlide(slide15, false);
-
-// ================= TITLE =================
-slide15.addText(verbatimThemesData.title, {
-  x: 0.25,
-  y: 0.18,
-  w: 4,
-  h: 0.5,
-  fontFace: "Segoe UI",
-  fontSize: 28,
-  color: "222222",
-  margin: 0,
-});
-
-// ================= SECTION TAG =================
-slide15.addShape(pptx.ShapeType.roundRect, {
-  x: 8.85, // moved right
-  y: 0.25,
-  w: 2.15,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "C40000" },
-  line: { color: "C40000" },
-});
-
-slide15.addText(verbatimThemesData.section, {
-  x: 8.9, // moved right
-  y: 0.32,
-  w: 2.05,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-
-// ================= THEME CARD FUNCTION =================
+// THEME CARD FUNCTION
 const addThemeCard = (
+  pptx: any,
   slide: any,
   theme: any,
   x: number,
@@ -2276,85 +1935,74 @@ const addThemeCard = (
   });
 };
 
-// ================= CARDS =================
-addThemeCard(slide15, verbatimThemesData.themes[0], 0.12, 1.2);
-addThemeCard(slide15, verbatimThemesData.themes[1], 5.95, 1.2);
-addThemeCard(slide15, verbatimThemesData.themes[2], 0.12, 3.65);
-addThemeCard(slide15, verbatimThemesData.themes[3], 5.95, 3.65);
+export function createSlideVerbatimThemes(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide15 = pptx.addSlide();
+  slide15.background = { color: "F2F2F2" };
+  addLogoToSlide(slide15, false);
 
-// ================= FOOTNOTE =================
-slide15.addText(verbatimThemesData.footerNote, {
-  x: 2.25,
-  y: 6.1,
-  w: 7,
-  h: 0.2,
-  fontFace: "Segoe UI",
-  fontSize: 7,
-  italic: true,
-  color: "6B7280",
-  align: "center",
-  margin: 0,
-});
+  // TITLE
+  slide15.addText(verbatimThemesData.title, {
+    x: 0.25,
+    y: 0.18,
+    w: 4,
+    h: 0.5,
+    fontFace: "Segoe UI",
+    fontSize: 28,
+    color: "222222",
+    margin: 0,
+  });
 
+  // SECTION TAG
+  slide15.addShape(pptx.ShapeType.roundRect, {
+    x: 8.85,
+    y: 0.25,
+    w: 2.15,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "C40000" },
+    line: { color: "C40000" },
+  });
 
+  slide15.addText(verbatimThemesData.section, {
+    x: 8.9,
+    y: 0.32,
+    w: 2.05,
+    h: 0.15,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    bold: true,
+    color: "FFFFFF",
+    align: "center",
+    margin: 0,
+  });
 
-// ================= FOOTER =================
-addFooterToSlide(
-  slide15,
-  pptx,
-  participantName,
-  footerDate,
-  15,
-10.80, 7.10, 2.30, 0.28
-);
+  // CARDS
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[0], 0.12, 1.2);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[1], 5.95, 1.2);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[2], 0.12, 3.65);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[3], 5.95, 3.65);
 
-// --------------------------------------------------------------------
+  // FOOTNOTE
+  slide15.addText(verbatimThemesData.footerNote, {
+    x: 2.25,
+    y: 6.1,
+    w: 7,
+    h: 0.2,
+    fontFace: "Segoe UI",
+    fontSize: 7,
+    italic: true,
+    color: "6B7280",
+    align: "center",
+    margin: 0,
+  });
 
+  addFooterToSlide(slide15, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
 
-
-const slide16 = pptx.addSlide();
-
-slide16.background = { color: "F2F2F2" };
-addLogoToSlide(slide16, false);
-
-// ================= TITLE =================
-slide16.addText(coachingQuadrantData.title, {
-  x: 0.28,
-  y: 0.18,
-  w: 5.5,
-  h: 0.5,
-  fontFace: "Segoe UI",
-  fontSize: 28,
-  color: "222222",
-  margin: 0,
-});
-
-// ================= SECTION TAG =================
-slide16.addShape(pptx.ShapeType.roundRect, {
-   x: 8.85, // moved right
-  y: 0.25,
-  w: 2.15,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "C40000" },
-  line: { color: "C40000" },
-});
-
-slide16.addText(coachingQuadrantData.section, {
-  x: 8.9, // moved right
-  y: 0.32,
-  w: 2.05,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-
-// ================= QUADRANT FUNCTION =================
+// QUADRANT FUNCTION
 const addQuadrant = (
+  pptx: any,
   slide: any,
   quadrant: any,
   x: number,
@@ -2362,7 +2010,6 @@ const addQuadrant = (
   w: number,
   h: number
 ) => {
-
   // Background
   slide.addShape(pptx.ShapeType.rect, {
     x,
@@ -2420,619 +2067,571 @@ const addQuadrant = (
   });
 };
 
-// ================= QUADRANTS =================
-addQuadrant(
-  slide16,
-  coachingQuadrantData.quadrants[0],
-  0.45,
-  1.35,
-  4.45,
-  2.15
-);
+export function createSlideCoachingQuadrant(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide16 = pptx.addSlide();
+  slide16.background = { color: "F2F2F2" };
+  addLogoToSlide(slide16, false);
 
-addQuadrant(
-  slide16,
-  coachingQuadrantData.quadrants[1],
-  4.9,
-  1.35,
-  4.45,
-  2.15
-);
-
-addQuadrant(
-  slide16,
-  coachingQuadrantData.quadrants[2],
-  0.45,
-  3.5,
-  4.45,
-  2.15
-);
-
-addQuadrant(
-  slide16,
-  coachingQuadrantData.quadrants[3],
-  4.9,
-  3.5,
-  4.45,
-  2.15
-);
-
-// ================= SIDE LABELS =================
-slide16.addText("You don’t consider consistent", {
-  x: -0.32,
-  y: 1.75,
-  w: 1.2,
-  h: 0.2,
-  rotate: 270,
-  fontFace: "Segoe UI",
-  fontSize: 9,
-  color: "222222",
-  align: "center",
-  margin: 0,
-});
-
-slide16.addText("You consider consistent", {
-  x: -0.32,
-  y: 3.95,
-  w: 1.2,
-  h: 0.2,
-  rotate: 270,
-  fontFace: "Segoe UI",
-  fontSize: 9,
-  color: "222222",
-  align: "center",
-  margin: 0,
-});
-// ================= BOTTOM LABELS =================
-slide16.addText("Colleagues see it consistently", {
-  x: 1.6,
-  y: 5.95,
-  w: 2.2,
-  h: 0.2,
-  fontFace: "Segoe UI",
-  fontSize: 11,
-  color: "222222",
-  align: "center",
-  margin: 0,
-});
-
-slide16.addText("Colleagues don’t see it consistently", {
-  x: 5.5,
-  y: 5.95,
-  w: 3,
-  h: 0.2,
-  fontFace: "Segoe UI",
-  fontSize: 11,
-  color: "222222",
-  align: "center",
-  margin: 0,
-});
-
-
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide16,
-  pptx,
-  participantName,
-  footerDate,
-  16,
-10.80, 7.10, 2.30, 0.28
-);
-
-// -------------------------------------------------------------------
-
-
-
-const slide17 = pptx.addSlide();
-
-slide17.background = { color: "F2F2F2" };
-addLogoToSlide(slide17, false);
-
-// ================= TITLE =================
-slide17.addText(resultsAtGlanceData.title, {
-  x: 0.35,
-  y: 0.22,
-  w: 4.8,
-  h: 0.45,
-  fontFace: "Segoe UI",
-  fontSize: 30,
-  color: "222222",
-  margin: 0,
-});
-
-// ================= SUBTITLE =================
-slide17.addText(resultsAtGlanceData.subtitle, {
-  x: 0.38,
-  y: 0.86,
-  w: 5.5,
-  h: 0.2,
-  fontFace: "Segoe UI",
-  fontSize: 14,
-  color: "20354B",
-  margin: 0,
-});
-
-// ================= BLUE TAG =================
-slide17.addShape(pptx.ShapeType.roundRect, {
-  x: 5.7,
-  y: 0.18,
-  w: 2.15,
-  h: 0.42,
-  rectRadius: 0.05,
-  fill: { color: "1F73E8" },
-  line: { color: "1F73E8" },
-});
-
-slide17.addText(resultsAtGlanceData.sectionLeft, {
-  x: 5.82,
-  y: 0.25,
-  w: 1.9,
-  h: 0.2,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-  breakLine: true,
-});
-
-// ================= GREY TAG =================
-slide17.addShape(pptx.ShapeType.roundRect, {
-  x: 8.45,
-  y: 0.08,
-  w: 2.35,
-  h: 0.5,
-  rectRadius: 0.05,
-  fill: { color: "7A7A7A" },
-  line: { color: "7A7A7A" },
-});
-
-slide17.addText(resultsAtGlanceData.sectionRight, {
-  x: 8.58,
-  y: 0.16,
-  w: 2.05,
-  h: 0.22,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-  breakLine: true,
-});
-
-// ================= MAIN TABLE HEADERS =================
-slide17.addShape(pptx.ShapeType.rect, {
-  x: 0.3,
-  y: 1.25,
-  w: 2.55,
-  h: 0.32,
-  fill: { color: "24979B" },
-  line: { color: "24979B" },
-});
-
-slide17.addText("Participant information", {
-  x: 0.38,
-  y: 1.33,
-  w: 1.8,
-  h: 0.12,
-  fontFace: "Segoe UI",
-  fontSize: 11,
-  bold: true,
-  color: "FFFFFF",
-  margin: 0,
-});
-
-slide17.addShape(pptx.ShapeType.rect, {
-  x: 2.98,
-  y: 1.25,
-  w: 5.75,
-  h: 0.32,
-  fill: { color: "24979B" },
-  line: { color: "24979B" },
-});
-
-slide17.addText("What the feedback suggests", {
-  x: 3.08,
-  y: 1.33,
-  w: 2.5,
-  h: 0.12,
-  fontFace: "Segoe UI",
-  fontSize: 11,
-  bold: true,
-  color: "FFFFFF",
-  margin: 0,
-});
-
-slide17.addShape(pptx.ShapeType.rect, {
-  x: 8.73,
-  y: 1.25,
-  w: 2.4,
-  h: 0.32,
-  fill: { color: "24979B" },
-  line: { color: "24979B" },
-});
-
-slide17.addText("What to do", {
-  x: 8.83,
-  y: 1.33,
-  w: 1.3,
-  h: 0.12,
-  fontFace: "Segoe UI",
-  fontSize: 11,
-  bold: true,
-  color: "FFFFFF",
-  margin: 0,
-});
-
-// ================= PARTICIPANT INFO BOX =================
-slide17.addShape(pptx.ShapeType.rect, {
-  x: 0.3,
-  y: 1.57,
-  w: 2.55,
-  h: 4.4,
-  fill: { color: "F2F2F2" },
-  line: { color: "BFDCDC", pt: 1 },
-});
-
-// Labels
-slide17.addText("Name", {
-  x: 0.4,
-  y: 1.72,
-  w: 0.8,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  color: "333333",
-});
-
-slide17.addText("Reporting\nperiod", {
-  x: 0.4,
-  y: 2.15,
-  w: 0.8,
-  h: 0.35,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  color: "333333",
-});
-
-slide17.addText("Response\nrate", {
-  x: 0.4,
-  y: 2.7,
-  w: 0.8,
-  h: 0.35,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  color: "333333",
-});
-
-// Values
-slide17.addText(resultsAtGlanceData.participantInfo.name, {
-  x: 1.35,
-  y: 1.72,
-  w: 1.2,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "222222",
-});
-
-slide17.addText(resultsAtGlanceData.participantInfo.reportingPeriod, {
-  x: 1.35,
-  y: 2.15,
-  w: 1.2,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "222222",
-});
-
-slide17.addText(resultsAtGlanceData.participantInfo.responseRate, {
-  x: 1.35,
-  y: 2.72,
-  w: 1.2,
-  h: 0.15,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "222222",
-});
-
-// Divider
-slide17.addShape(pptx.ShapeType.line, {
-  x: 1.25,
-  y: 1.57,
-  w: 0,
-  h: 1.55,
-  line: {
-    color: "D0D0D0",
-    pt: 1
-  }
-});
-
-// Confidential text
-slide17.addText(
-  resultsAtGlanceData.participantInfo.confidentialityText,
-  {
-    x: 0.4,
-    y: 3.45,
-    w: 2,
-    h: 1.2,
-    fontFace: "Segoe UI",
-    fontSize: 8,
-    color: "666666",
-    breakLine: true,
+  // TITLE
+  slide16.addText(coachingQuadrantData.title, {
+    x: 0.38,
+    y: 0.15,
+    w: 8.0,
+    h: 0.6,
+    fontFace: "Segoe UI Semibold",
+    fontSize: 32,
+    color: "222222",
     margin: 0,
-  }
-);
+  });
 
-slide17.addText(
-  resultsAtGlanceData.participantInfo.anonymityText,
-  {
-    x: 0.4,
-    y: 4.85,
-    w: 2,
-    h: 1.1,
+  // SECTION TAG
+  slide16.addShape(pptx.ShapeType.roundRect, {
+    x: 9.35,
+    y: 0.25,
+    w: 2.15,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "C40000" },
+    line: { color: "C40000" },
+  });
+
+  slide16.addText(coachingQuadrantData.section, {
+    x: 9.4,
+    y: 0.32,
+    w: 2.05,
+    h: 0.15,
     fontFace: "Segoe UI",
-    fontSize: 8,
-    color: "666666",
-    breakLine: true,
+    fontSize: 10,
+    bold: true,
+    color: "FFFFFF",
+    align: "center",
     margin: 0,
-  }
-);
+  });
 
-// ================= FEEDBACK TABLE =================
-const rowHeights = [1.0, 1.0, 1.0, 1.15];
+  // QUADRANTS (Widened and perfectly centered to form a continuous grid)
+  const GRID_X = 0.76;
+  const GRID_Y = 1.35;
+  const QUAD_W = 4.68;
+  const QUAD_H = 2.3;
 
-let currentY = 1.57;
+  addQuadrant(pptx, slide16, coachingQuadrantData.quadrants[0], GRID_X, GRID_Y, QUAD_W, QUAD_H);
+  addQuadrant(pptx, slide16, coachingQuadrantData.quadrants[1], GRID_X + QUAD_W, GRID_Y, QUAD_W, QUAD_H);
+  addQuadrant(pptx, slide16, coachingQuadrantData.quadrants[2], GRID_X, GRID_Y + QUAD_H, QUAD_W, QUAD_H);
+  addQuadrant(pptx, slide16, coachingQuadrantData.quadrants[3], GRID_X + QUAD_W, GRID_Y + QUAD_H, QUAD_W, QUAD_H);
 
-resultsAtGlanceData.feedbackSections.forEach(
-  (section, index) => {
+  // SIDE LABELS (Perfectly centered vertically within each row, positioned horizontally on the left margin)
+  slide16.addText("You don’t consider consistent", {
+    x: -0.55,
+    y: 2.2,
+    w: 2.0,
+    h: 0.3,
+    rotate: 270,
+    fontFace: "Segoe UI",
+    fontSize: 9,
+    color: "222222",
+    align: "center",
+    margin: 0,
+  });
 
-    const rowHeight = rowHeights[index];
+  slide16.addText("You consider consistent", {
+    x: -0.55,
+    y: 4.5,
+    w: 2.0,
+    h: 0.3,
+    rotate: 270,
+    fontFace: "Segoe UI",
+    fontSize: 9,
+    color: "222222",
+    align: "center",
+    margin: 0,
+  });
 
-    // Row container
+  // BOTTOM LABELS (Perfectly centered under the two column boxes)
+  slide16.addText("Colleagues see it consistently", {
+    x: GRID_X,
+    y: 6.05,
+    w: QUAD_W,
+    h: 0.3,
+    fontFace: "Segoe UI",
+    fontSize: 11,
+    color: "222222",
+    align: "center",
+    margin: 0,
+  });
+
+  slide16.addText("Colleagues don’t see it consistently", {
+    x: GRID_X + QUAD_W,
+    y: 6.05,
+    w: QUAD_W,
+    h: 0.3,
+    fontFace: "Segoe UI",
+    fontSize: 11,
+    color: "222222",
+    align: "center",
+    margin: 0,
+  });
+
+  addFooterToSlide(slide16, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}export function createSlideResultsAtGlance(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide17 = pptx.addSlide();
+  slide17.background = { color: "FFFFFF" };
+  addLogoToSlide(slide17, false);
+
+  // ── Layout constants ───────────────────────────────────────────────────────
+  const TABLE_X     = 0.30;
+  const TABLE_Y     = 1.45;
+  const PART_W      = 2.55;
+  const SEC_W       = 1.90;   // section title sub-col
+  const BULL_W      = 3.60;   // bullets sub-col
+  const ACT_W       = 2.25;   // action col
+  const FEED_W      = SEC_W + BULL_W + ACT_W;  // 7.75
+  const TOTAL_W     = PART_W + FEED_W;          // 10.30
+  const HEADER_H    = 0.32;
+  const TEAL        = "24979B";
+  const BORDER      = "BFDCDC";
+  const BORDER_PT   = 0.75;
+
+  const X_PART      = TABLE_X;           // 0.30
+  const X_FEED      = X_PART + PART_W;   // 2.85
+  const X_BULL      = X_FEED + SEC_W;    // 4.75
+  const X_ACT       = X_BULL + BULL_W;   // 8.35
+  const PART_BOX_Y  = TABLE_Y + HEADER_H;
+
+  // Row heights — sized to fit content exactly
+  const rowHeights  = [1.02, 1.02, 1.10, 1.28];
+  const TOTAL_ROW_H = rowHeights.reduce((a, b) => a + b, 0); // 4.42
+  const PART_BOX_H  = TOTAL_ROW_H;
+
+  // ── TITLE ──────────────────────────────────────────────────────────────────
+  slide17.addText(resultsAtGlanceData.title, {
+    x: 0.30, y: 0.10, w: 5.2, h: 0.75,
+    fontFace: "Segoe UI", fontSize: 36,
+    color: "222222", bold: false, margin: 0,
+  });
+
+  // ── SUBTITLE ───────────────────────────────────────────────────────────────
+  slide17.addText(resultsAtGlanceData.subtitle, {
+    x: 0.30, y: 0.96, w: 6.5, h: 0.22,
+    fontFace: "Segoe UI", fontSize: 13,
+    color: "333333", margin: 0,
+  });
+
+  // ── BLUE TAG ───────────────────────────────────────────────────────────────
+  slide17.addShape(pptx.ShapeType.roundRect, {
+    x: 5.95, y: 0.10, w: 2.35, h: 0.58,
+    rectRadius: 0.05,
+    fill: { color: "1F73E8" }, line: { color: "1F73E8" },
+  });
+  slide17.addText(resultsAtGlanceData.sectionLeft, {
+    x: 5.95, y: 0.10, w: 2.35, h: 0.58,
+    fontFace: "Segoe UI", fontSize: 10, bold: true,
+    color: "FFFFFF", align: "center", valign: "middle",
+    margin: 0, breakLine: true,
+  });
+
+  // ── GREY TAG ───────────────────────────────────────────────────────────────
+  slide17.addShape(pptx.ShapeType.roundRect, {
+    x: 8.55, y: 0.10, w: 2.35, h: 0.58,
+    rectRadius: 0.05,
+    fill: { color: "7A7A7A" }, line: { color: "7A7A7A" },
+  });
+  slide17.addText(resultsAtGlanceData.sectionRight, {
+    x: 8.55, y: 0.10, w: 2.35, h: 0.58,
+    fontFace: "Segoe UI", fontSize: 10, bold: true,
+    color: "FFFFFF", align: "center", valign: "middle",
+    margin: 0, breakLine: true,
+  });
+
+  // ── HEADER ROW — single teal bar ──────────────────────────────────────────
+  slide17.addShape(pptx.ShapeType.rect, {
+    x: X_PART, y: TABLE_Y, w: TOTAL_W, h: HEADER_H,
+    fill: { color: TEAL }, line: { color: TEAL },
+  });
+  slide17.addText("Participant information", {
+    x: X_PART + 0.10, y: TABLE_Y, w: PART_W, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 11, bold: true,
+    color: "FFFFFF", valign: "middle", margin: 0,
+  });
+  slide17.addText("What the feedback suggests", {
+    x: X_FEED + 0.10, y: TABLE_Y, w: SEC_W + BULL_W, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 11, bold: true,
+    color: "FFFFFF", valign: "middle", margin: 0,
+  });
+  slide17.addText("What to do", {
+    x: X_ACT + 0.10, y: TABLE_Y, w: ACT_W, h: HEADER_H,
+    fontFace: "Segoe UI", fontSize: 11, bold: true,
+    color: "FFFFFF", valign: "middle", margin: 0,
+  });
+
+  // ── PARTICIPANT INFO BOX — outer border ────────────────────────────────────
+  slide17.addShape(pptx.ShapeType.rect, {
+    x: X_PART, y: PART_BOX_Y, w: PART_W, h: PART_BOX_H,
+    fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
+  });
+
+  // Info rows: each gets its own subtle bottom separator
+  const INFO_LABEL_X  = X_PART + 0.10;
+  const INFO_VALUE_X  = X_PART + 1.12;
+  const INFO_LABEL_W  = 0.95;
+  const INFO_VALUE_W  = 1.28;
+  const INFO_DIV_X    = X_PART + 1.05;  // vertical divider x
+
+  const infoRows = [
+    { label: "Name",               value: resultsAtGlanceData.participantInfo.name,            rowH: 0.38 },
+    { label: "Reporting\nperiod",  value: resultsAtGlanceData.participantInfo.reportingPeriod,  rowH: 0.44 },
+    { label: "Response\nrate",     value: resultsAtGlanceData.participantInfo.responseRate,     rowH: 0.44 },
+  ];
+
+  let infoY = PART_BOX_Y + 0.10;
+  infoRows.forEach(({ label, value, rowH }, i) => {
+    // Subtle row separator (except after last info row)
+    if (i > 0) {
+      slide17.addShape(pptx.ShapeType.line, {
+        x: X_PART, y: infoY - 0.06, w: PART_W, h: 0,
+        line: { color: "E8E8E8", pt: 0.5 },
+      });
+    }
+
+    // Vertical divider spans full row height
+    slide17.addShape(pptx.ShapeType.line, {
+      x: INFO_DIV_X, y: infoY - 0.04, w: 0, h: rowH,
+      line: { color: "D8D8D8", pt: 0.75 },
+    });
+
+    slide17.addText(label, {
+      x: INFO_LABEL_X, y: infoY, w: INFO_LABEL_W, h: rowH,
+      fontFace: "Segoe UI", fontSize: 10,
+      color: "444444", breakLine: true, valign: "middle", margin: 0,
+    });
+    slide17.addText(value, {
+      x: INFO_VALUE_X, y: infoY, w: INFO_VALUE_W, h: rowH,
+      fontFace: "Segoe UI", fontSize: 10,
+      bold: true, color: "111111", valign: "middle", margin: 0,
+    });
+
+    infoY += rowH + 0.06;
+  });
+
+  // Horizontal separator below info rows
+  const DIVIDER_Y = PART_BOX_Y + 1.50;
+  slide17.addShape(pptx.ShapeType.line, {
+    x: X_PART, y: DIVIDER_Y, w: PART_W, h: 0,
+    line: { color: BORDER, pt: BORDER_PT },
+  });
+
+  // Confidential text
+  slide17.addText(resultsAtGlanceData.participantInfo.confidentialityText, {
+    x: INFO_LABEL_X, y: DIVIDER_Y + 0.12, w: PART_W - 0.18, h: 1.40,
+    fontFace: "Segoe UI", fontSize: 8, color: "555555",
+    breakLine: true, margin: 0, valign: "top",
+  });
+
+  // Anonymity text
+  slide17.addText(resultsAtGlanceData.participantInfo.anonymityText, {
+    x: INFO_LABEL_X, y: DIVIDER_Y + 1.62, w: PART_W - 0.18, h: 1.40,
+    fontFace: "Segoe UI", fontSize: 8, color: "555555",
+    breakLine: true, margin: 0, valign: "top",
+  });
+
+  // ── FEEDBACK ROWS — drawn as individual cell rects (no line shapes) ────────
+  // This avoids the selection-handle artifact from standalone line elements.
+  let currentY = PART_BOX_Y;
+
+  resultsAtGlanceData.feedbackSections.forEach((section, index) => {
+    const rowH = rowHeights[index];
+
+    // Cell 1: section title
     slide17.addShape(pptx.ShapeType.rect, {
-      x: 2.98,
-      y: currentY,
-      w: 8.15,
-      h: rowHeight,
-      fill: { color: "F2F2F2" },
-      line: { color: "BFDCDC", pt: 1 },
+      x: X_FEED, y: currentY, w: SEC_W, h: rowH,
+      fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
     });
 
-    // Column dividers
-    slide17.addShape(pptx.ShapeType.line, {
-      x: 4.95,
-      y: currentY,
-      w: 0,
-      h: rowHeight,
-      line: {
-        color: "BFDCDC",
-        pt: 1
-      }
+    // Cell 2: bullets
+    slide17.addShape(pptx.ShapeType.rect, {
+      x: X_BULL, y: currentY, w: BULL_W, h: rowH,
+      fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
     });
 
-    slide17.addShape(pptx.ShapeType.line, {
-      x: 8.73,
-      y: currentY,
-      w: 0,
-      h: rowHeight,
-      line: {
-        color: "BFDCDC",
-        pt: 1
-      }
+    // Cell 3: action
+    slide17.addShape(pptx.ShapeType.rect, {
+      x: X_ACT, y: currentY, w: ACT_W, h: rowH,
+      fill: { color: "FFFFFF" }, line: { color: BORDER, pt: BORDER_PT },
     });
 
-    // Left title
+    // Section title text
     slide17.addText(section.title, {
-      x: 3.08,
-      y: currentY + 0.18,
-      w: 1.6,
-      h: 0.5,
-      fontFace: "Segoe UI",
-      fontSize: 11,
-      bold: true,
-      color: "20354B",
-      breakLine: true,
-      margin: 0,
+      x: X_FEED + 0.10, y: currentY + 0.10,
+      w: SEC_W - 0.15, h: rowH - 0.15,
+      fontFace: "Segoe UI", fontSize: 11, bold: true,
+      color: "20354B", breakLine: true, valign: "top", margin: 0,
     });
 
-    // Middle bullets
-    let bulletY = currentY + 0.18;
-
+    // Bullet points
+    let bulletY = currentY + 0.12;
     section.points.forEach((point) => {
       slide17.addText(`• ${point}`, {
-        x: 5.05,
-        y: bulletY,
-        w: 3.3,
-        h: 0.22,
-        fontFace: "Segoe UI",
-        fontSize: 10,
-        color: "20354B",
-        margin: 0,
-        breakLine: true,
+        x: X_BULL + 0.10, y: bulletY,
+        w: BULL_W - 0.18, h: 0.28,
+        fontFace: "Segoe UI", fontSize: 10,
+        color: "20354B", margin: 0, fit: "shrink",
       });
-
-      bulletY += 0.22;
+      bulletY += 0.28;
     });
 
-    // Right action text
+    // Action text
     slide17.addText(section.action, {
-      x: 8.83,
-      y: currentY + 0.18,
-      w: 2.05,
-      h: rowHeight - 0.2,
-      fontFace: "Segoe UI",
-      fontSize: 10,
-      color: "333333",
-      breakLine: true,
-      margin: 0,
+      x: X_ACT + 0.10, y: currentY + 0.10,
+      w: ACT_W - 0.18, h: rowH - 0.15,
+      fontFace: "Segoe UI", fontSize: 10,
+      color: "333333", breakLine: true, valign: "top", margin: 0,
     });
 
-    currentY += rowHeight;
+    currentY += rowH;
+  });
+
+  addFooterToSlide(slide17, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+export function createSlideAppendixDivider(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide18 = pptx.addSlide();
+  slide18.background = { color: "111111" };
+  addLogoToSlide(slide18, true);
+
+  // SECTION TAG
+  slide18.addShape(pptx.ShapeType.roundRect, {
+    x: 8.62,
+    y: 0.28,
+    w: 2.2,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "D40000" },
+    line: { color: "D40000" },
+  });
+
+  slide18.addText("DRAFT FOR INPUT", {
+    x: 8.72,
+    y: 0.36,
+    w: 2.0,
+    h: 0.12,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    bold: true,
+    color: "FFFFFF",
+    align: "center",
+    margin: 0,
+  });
+
+  // TITLE
+  slide18.addText("APPENDIX", {
+    x: 0.55,
+    y: 3.65,
+    w: 3,
+    h: 0.45,
+    fontFace: "Segoe UI Light",
+    fontSize: 32,
+    color: "FFFFFF",
+    margin: 0,
+  });
+
+  addFooterToSlide(slide18, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+
+export function createSlideSelectiveOutputsDivider(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide19 = pptx.addSlide();
+  slide19.background = { color: "111111" };
+  addLogoToSlide(slide19, true);
+
+  // SECTION TAG
+  slide19.addShape(pptx.ShapeType.roundRect, {
+    x: 8.62,
+    y: 0.32,
+    w: 2.2,
+    h: 0.38,
+    rectRadius: 0.04,
+    fill: { color: "D40000" },
+    line: { color: "D40000" },
+  });
+
+  slide19.addText("DRAFT FOR INPUT", {
+    x: 8.72,
+    y: 0.40,
+    w: 2.0,
+    h: 0.12,
+    fontFace: "Segoe UI",
+    fontSize: 10,
+    bold: true,
+    color: "FFFFFF",
+    align: "center",
+    margin: 0,
+  });
+
+  // TITLE
+  slide19.addText("SELECTIVE ADDITIONAL OUTPUTS", {
+    x: 0.55,
+    y: 3.78,
+    w: 7.5,
+    h: 0.5,
+    fontFace: "Segoe UI Light",
+    fontSize: 30,
+    color: "FFFFFF",
+    margin: 0,
+  });
+
+  addFooterToSlide(slide19, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+
+export function createSlideEnd(params: SlideParams) {
+  const { pptx, participantName, footerDate, pageNumber } = params;
+  const slide20 = pptx.addSlide();
+  slide20.background = { color: "111111" };
+  addLogoToSlide(slide20, true);
+
+  // TITLE
+  slide20.addText("END", {
+    x: 0.55,
+    y: 5.05,
+    w: 2,
+    h: 0.45,
+    fontFace: "Segoe UI Light",
+    fontSize: 30,
+    color: "FFFFFF",
+    margin: 0,
+  });
+
+  addFooterToSlide(slide20, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
+}
+
+//////////////////////////////////////////////////////
+// ROUTE
+//////////////////////////////////////////////////////
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+
+  const formId = searchParams.get("formId");
+  const participantId = searchParams.get("participantId");
+
+  if (!formId) {
+    return Response.json(
+      { error: "formId required" },
+      { status: 400 }
+    );
   }
-);
+
+  //////////////////////////////////////////////////////
+  // FETCH FORM
+  //////////////////////////////////////////////////////
+
+  const form = await prisma.form.findUnique({
+    where: { id: formId },
+    include: {
+      questions: { include: { options: true } },
+      responses: {
+        include: {
+          participant: true,
+          answers: { include: { option: true } },
+        },
+      },
+    },
+  });
+
+  if (!form) {
+    return Response.json({ error: "Form not found" }, { status: 404 });
+  }
+
+  //////////////////////////////////////////////////////
+  // GLOBAL FOOTER VARIABLES
+  //////////////////////////////////////////////////////
+
+  const participantName = form.responses[0]?.participant?.fullName || "PARTICIPANT";
+  const footerDate = new Date().toLocaleDateString();
+
+  //////////////////////////////////////////////////////
+  // RESPONSE POOLS
+  //////////////////////////////////////////////////////
+
+  const filteredResponses = participantId
+    ? form.responses.filter(
+      (r: any) => r.participantId === participantId
+    )
+    : form.responses;
+
+  const allResponses = form.responses;
+
+  const selfResponses = filteredResponses.filter(
+    (r: any) => !!r.participant?.email && r.email.toLowerCase() === r.participant.email.toLowerCase()
+  );
+
+  const othersResponses = filteredResponses.filter(
+    (r: any) => !r.participant?.email || r.email.toLowerCase() !== r.participant.email.toLowerCase()
+  );
+
+  //////////////////////////////////////////////////////
+  // COMPUTE ANALYTICS
+  //////////////////////////////////////////////////////
+
+  const analytics = computeAnalytics(form.questions, filteredResponses);
+  const selfAnalytics = computeAnalytics(form.questions, selfResponses);
+  const othersAnalytics = computeAnalytics(form.questions, othersResponses);
+  const enterpriseAnalytics = computeAnalytics(form.questions, allResponses);
+
+  const pptx = new pptxgen();
+  pptx.layout = "LAYOUT_WIDE";
+  pptx.author = "Antigravity";
+  pptx.subject = "360 Feedback";
+  pptx.company = "360 Feedback Report";
+
+  // Diagram Base64
+  const diagramPath = path.join(process.cwd(), "public", "360_diagram.png");
+  let diagramBase64 = "";
+  try {
+    diagramBase64 = fs.readFileSync(diagramPath).toString("base64");
+  } catch (err) {
+    console.error("Error reading 360 diagram image:", err);
+  }
+
+  const baseParams = {
+    pptx,
+    participantName,
+    footerDate,
+    analytics,
+    selfAnalytics,
+    othersAnalytics,
+    enterpriseAnalytics,
+    diagramBase64,
+  };
+
+  let pageNumber = 1;
+
+  createSlideIntro({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideHowCreated({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideHowToUse({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideResultsAtGlance({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideOverallResults({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideSelfOther({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideQualitativeFeedback({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideAppendixDivider({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideResultsDistribution({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideInsufficientExposures({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideVerbatimQuotes({ ...baseParams, pageNumber: pageNumber++ });
+  createSlidePositiveImpact({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideLeadershipImpact({ ...baseParams, pageNumber: pageNumber++ });
+  createSlidePDP({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideScoreCalc({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideFAQ({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideSelectiveOutputsDivider({ ...baseParams, pageNumber: pageNumber++ });
+
+  createSlideVerbatimThemes({ ...baseParams, pageNumber: pageNumber++ });
+  createSlideCoachingQuadrant({ ...baseParams, pageNumber: pageNumber++ });
 
 
 
-// ================= FOOTER =================
-addFooterToSlide(
-  slide17,
-  pptx,
-  participantName,
-  footerDate,
-  17,
-10.80, 7.10, 2.30, 0.28
-);
+  createSlideEnd({ ...baseParams, pageNumber: pageNumber++ });
 
-// --------------------------------------------------------------
-
-const slide18 = pptx.addSlide();
-
-slide18.background = { color: "111111" };
-addLogoToSlide(slide18, true);
-
-// ================= SECTION TAG =================
-slide18.addShape(pptx.ShapeType.roundRect, {
-  x: 8.62,
-  y: 0.28,
-  w: 2.2,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "D40000" },
-  line: { color: "D40000" },
-});
-
-slide18.addText("DRAFT FOR INPUT", {
-  x: 8.72,
-  y: 0.36,
-  w: 2.0,
-  h: 0.12,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-
-// ================= TITLE =================
-slide18.addText("APPENDIX", {
-  x: 0.55,
-  y: 3.65,
-  w: 3,
-  h: 0.45,
-  fontFace: "Segoe UI Light",
-  fontSize: 32,
-  color: "FFFFFF",
-  margin: 0,
-});
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide18,
-  pptx,
-  participantName,
-  footerDate,
-  18,
-  10.80,
-  7.10,
-  2.30,
-  0.28
-);
-
-// --------------------------------------------------------------
-
-const slide19 = pptx.addSlide();
-
-slide19.background = { color: "111111" };
-addLogoToSlide(slide19, true);
-
-// ================= SECTION TAG =================
-slide19.addShape(pptx.ShapeType.roundRect, {
-  x: 8.62,
-  y: 0.32,
-  w: 2.2,
-  h: 0.38,
-  rectRadius: 0.04,
-  fill: { color: "D40000" },
-  line: { color: "D40000" },
-});
-
-slide19.addText("DRAFT FOR INPUT", {
-  x: 8.72,
-  y: 0.40,
-  w: 2.0,
-  h: 0.12,
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  bold: true,
-  color: "FFFFFF",
-  align: "center",
-  margin: 0,
-});
-
-// ================= TITLE =================
-slide19.addText("SELECTIVE ADDITIONAL OUTPUTS", {
-  x: 0.55,
-  y: 3.78,
-  w: 7.5,
-  h: 0.5,
-  fontFace: "Segoe UI Light",
-  fontSize: 30,
-  color: "FFFFFF",
-  margin: 0,
-});
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide19,
-  pptx,
-  participantName,
-  footerDate,
-  19,
-  10.80,
-  7.10,
-  2.30,
-  0.28
-);
-// --------------------------------------------------------------
-
-const slide20 = pptx.addSlide();
-
-slide20.background = { color: "111111" };
-addLogoToSlide(slide20, true);
-
-// ================= TITLE =================
-slide20.addText("END", {
-  x: 0.55,
-  y: 5.05,
-  w: 2,
-  h: 0.45,
-  fontFace: "Segoe UI Light",
-  fontSize: 30,
-  color: "FFFFFF",
-  margin: 0,
-});
-
-// ================= FOOTER =================
-addFooterToSlide(
-  slide20,
-  pptx,
-  participantName,
-  footerDate,
-  20,
-  10.80,
-  7.10,
-  2.30,
-  0.28
-);
-  // //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
   // EXPORT
   //////////////////////////////////////////////////////
 
@@ -3057,4 +2656,3 @@ addFooterToSlide(
     },
   });
 }
-
