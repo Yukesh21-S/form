@@ -684,7 +684,6 @@ export function createSlideResultsDistribution(params: SlideParams) {
 
   addFooterToSlide(slide2, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
-
 export function createSlideInsufficientExposures(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber, analytics } = params;
   const slide3 = pptx.addSlide();
@@ -727,25 +726,19 @@ export function createSlideInsufficientExposures(params: SlideParams) {
   });
 
   // Header text col 2
-  slide3.addText("Count of Insufficient Exposure", {
-    x: COL2_X, y: HEADER_Y, w: COL2_W, h: HEADER_H,
-    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
-    margin: 0, valign: "middle", align: "left",
-  });
-
-  // Vertical divider between col 1 and col 2
-  slide3.addShape(pptx.ShapeType.line, {
-    x: COL2_X, y: HEADER_Y,
-    w: 0.001, h: HEADER_H + (analytics.length * ROW_H),
-    line: { color: "A0A0A0", pt: 0.75 },
-  });
-
-  // Outer border of entire table
-  slide3.addShape(pptx.ShapeType.rect, {
-    x: TABLE_LEFT, y: HEADER_Y,
-    w: TABLE_W, h: HEADER_H + (analytics.length * ROW_H),
-    fill: { type: "none" }, line: { color: "B0B0B0", pt: 0.75 },
-  });
+slide3.addText("Count of Insufficient Exposure", {
+  x: COL2_X + 0.08,
+  y: HEADER_Y,
+  w: COL2_W - 0.08,
+  h: HEADER_H,
+  fontFace: "Segoe UI",
+  fontSize: 8.5,
+  bold: true,
+  color: "111111",
+  margin: 0,
+  valign: "middle",
+  align: "left",
+});
 
   // ── Data rows ─────────────────────────────────────────────────────────────
   analytics.forEach((item, idx) => {
@@ -762,9 +755,11 @@ export function createSlideInsufficientExposures(params: SlideParams) {
 
     // Row bottom border
     slide3.addShape(pptx.ShapeType.line, {
-      x: TABLE_LEFT, y: rowY + ROW_H,
-      w: TABLE_W, h: 0.001,
-      line: { color: "D0D0D0", pt: 0.5 },
+      x: TABLE_LEFT,
+      y: rowY + ROW_H,
+      w: TABLE_W,
+      h: 0.001,
+      line: { color: "7A7A7A", pt: 0.8 },
     });
 
     // Question label
@@ -799,6 +794,24 @@ export function createSlideInsufficientExposures(params: SlideParams) {
       });
     }
   });
+
+  //  Vertical divider drawn AFTER all rows so it renders on top of row backgrounds
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: COL2_X - 0.003,
+    y: HEADER_Y,
+    w: 0.006,
+    h: HEADER_H + analytics.length * ROW_H,
+    fill: { color: "666666" },
+    line: { pt: 0 },
+  });
+
+  //  Outer border drawn AFTER all rows so it renders on top
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: TABLE_LEFT, y: HEADER_Y,
+    w: TABLE_W, h: HEADER_H + (analytics.length * ROW_H),
+    fill: { type: "none" }, line: { color: "666666", pt: 1.2 },
+  });
+
 
   // ── NOTE BOX ──────────────────────────────────────────────────────────────
   // Fixed position on right side; vertically centred in the lower half.
@@ -2258,12 +2271,6 @@ export function createSlideCoachingQuadrant(params: SlideParams) {
     fontFace: "Segoe UI", fontSize: 36,
     color: "222222", bold: false, margin: 0,
   });
-
-  // // Custom dotted underline under "at a glance"
-  // slide17.addShape(pptx.ShapeType.line, {
-  //   x: 2.98, y: 0.72, w: 2.05, h: 0,
-  //   line: { color: "B8AA97", pt: 1.5, dashType: "dash" }
-  // });
 
   // Subtitle
   slide17.addText(resultsAtGlanceData.subtitle, {
