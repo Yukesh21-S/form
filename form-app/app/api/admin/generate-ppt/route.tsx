@@ -17,47 +17,21 @@ import verbatimQuotesData, {
 // COLORS
 //////////////////////////////////////////////////////
 
-const COLORS = {
-  bg: "F3F3F3",
-  green: "00A000",
-  orange: "E67E22",
-  red: "E05A6A",
-  darkRed: "B00000",
-  brightRed: "E53935",
-  beige: "B8AA97",
-  lightPink: "F3D6D8",
-  lightBeige: "E7DED0",
-  lightGreen: "DDEEDB",
-  grayHeader: "D9D9D9",
-  line: "CFCFCF",
-  text: "222222",
-  blue: "1D6FD8",
-  teal: "00897B",
-  orange2: "E67E22",
-};
+import { COLORS, LAYOUT, getScoreColor } from "./constants";
+import { SlideBuilder } from "./slideBuilder";
+import { addLogoToSlide, addFooterToSlide } from "./helpers";
 
 //////////////////////////////////////////////////////
 // LAYOUT CONSTANTS
 //////////////////////////////////////////////////////
 
-const ROW_HEIGHT = 0.31;
-const START_Y = 1.38;
-const QUESTION_X = 0.52;
-const QUESTION_W = 3.55;
-const BAR_X = 4.15;
-const BAR_W = 2.55;
-const COUNT_START_X = 7.05;
-const COUNT_W = 0.92;
+
 
 //////////////////////////////////////////////////////
 // SCORE COLOR
 //////////////////////////////////////////////////////
 
-function getScoreColor(score: number) {
-  if (score > 85) return COLORS.green;
-  if (score >= 70) return COLORS.orange;
-  return COLORS.red;
-}
+
 
 //////////////////////////////////////////////////////
 // ANALYTICS HELPER
@@ -120,84 +94,13 @@ function getEricssonLogoBase64(color: string) {
   return "data:image/svg+xml;base64," + Buffer.from(svg).toString("base64");
 }
 
-function addLogoToSlide(slide: any, isDarkBg: boolean) {
-  const color = isDarkBg ? "FFFFFF" : "000000";
-  const logoBase64 = getEricssonLogoBase64(color);
-
-  // Add Logo symbol
-  slide.addImage({
-    data: logoBase64,
-    x: 12.45,
-    y: 0.22,
-    w: 0.35,
-    h: 0.35,
-  });
-
-  // Add "ERICSSON" text underneath it
-  slide.addText("ERICSSON", {
-    x: 12.15,
-    y: 0.59,
-    w: 0.95,
-    h: 0.15,
-    fontFace: "Segoe UI",
-    fontSize: 6.5,
-    bold: true,
-    color: color,
-    align: "center",
-    margin: 0,
-  });
-}
+// addLogoToSlide moved to helpers.ts
 
 //////////////////////////////////////////////////////
 // GLOBAL FOOTER HELPER
 //////////////////////////////////////////////////////
 
-function addFooterToSlide(
-  slide: any,
-  pptx: any,
-  participantName: string,
-  date: string,
-  pageNumber: number,
-  x: number = 10.4,
-  y: number = 7.3,
-  w: number = 2.5,
-  h: number = 0.18
-) {
-  // ── Left: "Leadership Assessments  |  Ericsson  |  Page N" ───────────────
-  slide.addText(`Leadership Assessments  |  Ericsson  |  Page ${pageNumber}`, {
-    x: 0.25,
-    y: y,
-    w: 6.0,
-    h: h,
-    fontFace: "Segoe UI",
-    fontSize: 7,
-    color: "888888",
-    margin: 0,
-    valign: "middle",
-    align: "left",
-  });
 
-  // ── Right: red participant name & date box ────────────────────────────────
-  slide.addShape(pptx.ShapeType.rect, {
-    x, y, w, h,
-    fill: { color: "FFFFFF" },
-    line: { color: "B00000", pt: 1 },
-  });
-
-  slide.addText(`${participantName} & ${date}`, {
-    x: x + 0.05,
-    y: y + 0.02,
-    w: w - 0.1,
-    h: h - 0.04,
-    fontFace: "Segoe UI",
-    fontSize: 6.5,
-    color: "B00000",
-    bold: true,
-    align: "center",
-    valign: "middle",
-    margin: 0,
-  });
-}
 
 //////////////////////////////////////////////////////
 // SLIDE INTERFACE
@@ -218,21 +121,29 @@ interface SlideParams {
 //////////////////////////////////////////////////////
 // MODULAR SLIDE CREATION FUNCTIONS
 //////////////////////////////////////////////////////
-
 export function createSlideIntro(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber, diagramBase64 } = params;
-  const slideIntro = pptx.addSlide();
-  slideIntro.background = { color: "111111" };
-  addLogoToSlide(slideIntro, true);
+
+  const builder = new SlideBuilder(pptx)
+    .setBackground("111111")
+    .addLogo(true);
 
   // TITLE
-  slideIntro.addText("What is a 360 diagnostic", {
-    x: 0.4, y: 0.25, w: 9, h: 0.9,
-    fontFace: "Aptos", fontSize: 40, bold: false, color: "FFFFFF", margin: 0,
+  builder.addText("What is a 360 diagnostic", {
+    x: 0.4,
+    y: 0.25,
+    w: 9,
+    h: 0.9,
+    fontFace: "Aptos",
+    fontSize: 40,
+    bold: false,
+    color: "FFFFFF",
+    margin: 0,
   });
 
+  // LEFT DIAGRAM
   if (diagramBase64) {
-    slideIntro.addImage({
+    builder.addImage({
       data: "image/png;base64," + diagramBase64,
       x: 0.2,
       y: 1.2,
@@ -245,22 +156,68 @@ export function createSlideIntro(params: SlideParams) {
   const TX = 7.0;
   const TW = 5.9;
 
-  slideIntro.addText(
+  builder.addText(
     "A 360 diagnostic is a powerful development tool. It brings together feedback from your manager, peers, direct reports and other stakeholders to show how consistently your leadership behaviors are experienced in practice.",
-    { x: TX, y: 1.6, w: TW, h: 1.5, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
+    {
+      x: TX,
+      y: 1.55,
+      w: TW,
+      h: 1.15,
+      fontFace: "Aptos",
+      fontSize: 15,
+      color: "FFFFFF",
+      breakLine: true,
+      margin: 0,
+      valign: "top",
+    }
   );
-  slideIntro.addText(
+
+  builder.addText(
     "No single perspective tells the full story. The value of a 360 is that it gives you a broader view of your leadership impact: what others see clearly, what may be less visible, and where your own view may differ from the experience of those around you.",
-    { x: TX, y: 3.3, w: TW, h: 1.5, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
+    {
+      x: TX,
+      y: 2.85,
+      w: TW,
+      h: 1.15,
+      fontFace: "Aptos",
+      fontSize: 15,
+      color: "FFFFFF",
+      breakLine: true,
+      margin: 0,
+      valign: "top",
+    }
   );
-  slideIntro.addText(
+
+  builder.addText(
     "The micro-behaviors covered in this report reflect observable leadership behaviors relevant to your organization's context. This means the feedback is focused on what people see you do day to day — not on personality, intent or potential. The report is intended to support reflection, coaching and practical development planning.",
-    { x: TX, y: 4.9, w: TW, h: 2.0, fontFace: "Aptos", fontSize: 15, color: "FFFFFF", breakLine: true, margin: 0, valign: "top" }
+    {
+      x: TX,
+      y: 4.15,
+      w: TW,
+      h: 1.6,
+      fontFace: "Aptos",
+      fontSize: 15,
+      color: "FFFFFF",
+      breakLine: true,
+      margin: 0,
+      valign: "top",
+    }
   );
 
-  addFooterToSlide(slideIntro, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
-}
+  const slide = builder.build();
 
+  addFooterToSlide(
+    slide,
+    pptx,
+    participantName,
+    footerDate,
+    pageNumber,
+    10.80,
+    7.10,
+    2.30,
+    0.28
+  );
+}
 export function createSlideHowCreated(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slideHowCreated = pptx.addSlide();
@@ -295,16 +252,38 @@ export function createSlideHowCreated(params: SlideParams) {
     { x: 0.5, y: 2.3, w: 2.8, h: 3.5, fontFace: "Segoe UI", fontSize: 11, color: "FFFFFF", valign: "top", breakLine: true, margin: 0 }
   );
 
-  // VERTICAL DIVIDER LINE
+  // VERTICAL DIVIDER LINE WITH CHEVRON GAP
+  const lineX = 3.5;
+  const lineStartY = 1.75;   // starts just at the "Background" heading level
+  const lineEndY = 6.85;     // ends at footer level
+  const chevronY = 3.55;     // vertically centered in the content area
+  const chevronH = 0.45;
+  const gap = 0.12;
+
+  // TOP LINE SEGMENT — from heading level to just above chevron
   slideHowCreated.addShape(pptx.ShapeType.line, {
-    x: 3.7, y: 1.8, w: 0.001, h: 5.2,
+    x: lineX, y: lineStartY, w: 0.001, h: chevronY - gap - lineStartY,
     line: { color: "444444", pt: 1.2 },
   });
 
-  // BLUE CHEVRON DECORATION
-  slideHowCreated.addShape(pptx.ShapeType.chevron, {
-    x: 3.55, y: 4.15, w: 0.3, h: 0.4,
-    fill: { color: "1E56DB" }, line: { color: "1E56DB" },
+  // BOTTOM LINE SEGMENT — from just below chevron to footer
+  slideHowCreated.addShape(pptx.ShapeType.line, {
+    x: lineX, y: chevronY + chevronH + gap, w: 0.001, h: lineEndY - (chevronY + chevronH + gap),
+    line: { color: "444444", pt: 1.2 },
+  });
+
+  // BLUE CHEVRON — centered on the line in the gap
+  slideHowCreated.addText(">", {
+    x: lineX - 0.17,
+    y: chevronY,
+    w: 0.35,
+    h: chevronH,
+    fontFace: "Segoe UI Semibold",
+    fontSize: 32,
+    color: "0070F0",
+    align: "center",
+    valign: "middle",
+    margin: 0,
   });
 
   // MIDDLE & RIGHT SECTIONS - MICRO-BEHAVIORS
@@ -365,7 +344,6 @@ export function createSlideHowCreated(params: SlideParams) {
 
   addFooterToSlide(slideHowCreated, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
-
 export function createSlideHowToUse(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slideHowToUse = pptx.addSlide();
@@ -600,14 +578,52 @@ export function createSlideResultsDistribution(params: SlideParams) {
 
   slide2.addShape(pptx.ShapeType.rect, { x: COL_X[0], y: TABLE_Y, w: COL_W[0] + COL_W[1], h: HEADER_H, fill: { color: "E7E7E7" } });
 
-  const headers = [
-    { text: "Results", x: COL_X[0], w: COL_W[0], align: "left", color: "111111", bold: true },
-    { text: "Distribution", x: COL_X[1], w: COL_W[1], align: "center", color: "111111", bold: true },
-    { text: "Rarely", x: COL_X[2], w: COL_W[2], bg: "9E0B0F", color: "FFFFFF" },
-    { text: "Sometimes", x: COL_X[3], w: COL_W[3], bg: "FF0000", color: "FFFFFF" },
-    { text: "Often", x: COL_X[4], w: COL_W[4], bg: "AD9380", color: "FFFFFF" },
-    { text: "Always", x: COL_X[5], w: COL_W[5], bg: "008032", color: "FFFFFF" },
-  ];
+const headers = [
+  {
+    text: "Results",
+    x: COL_X[0],
+    w: COL_W[0],
+    align: "left",
+    color: "111111",
+    bold: true
+  },
+  {
+    text: "Distribution",
+    x: COL_X[1],
+    w: COL_W[1],
+    align: "center",
+    color: "111111",
+    bold: true
+  },
+  {
+    text: "Rarely",
+    x: COL_X[2],
+    w: COL_W[2],
+    bg: "D00000",      // darker red
+    color: "FFFFFF"
+  },
+  {
+    text: "Sometimes",
+    x: COL_X[3],
+    w: COL_W[3],
+    bg: "FF2B2B",      // brighter red
+    color: "FFFFFF"
+  },
+  {
+    text: "Often",
+    x: COL_X[4],
+    w: COL_W[4],
+    bg: "B9AC96",      // warm beige/grey
+    color: "FFFFFF"
+  },
+  {
+    text: "Always",
+    x: COL_X[5],
+    w: COL_W[5],
+    bg: "008A00",      // Ericsson-style green
+    color: "FFFFFF"
+  }
+];
 
   headers.forEach(h => {
     if (h.bg) {
@@ -668,11 +684,26 @@ export function createSlideResultsDistribution(params: SlideParams) {
 
       const barY = y + (ROW_H * 0.2);
       const barH = ROW_H * 0.6;
-
-      if (wR > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wS - wO - wR, y: barY, w: wR, h: barH, fill: { color: "9E0B0F" }, line: { pt: 0 } });
-      if (wS > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wO - wS, y: barY, w: wS, h: barH, fill: { color: "FF0000" }, line: { pt: 0 } });
-      if (wO > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X - wO, y: barY, w: wO, h: barH, fill: { color: "AD9380" }, line: { pt: 0 } });
-      if (wA > 0) slide2.addShape(pptx.ShapeType.rect, { x: CHART_CENTER_X, y: barY, w: wA, h: barH, fill: { color: "008032" }, line: { pt: 0 } });
+if (wR > 0) slide2.addShape(pptx.ShapeType.rect, {
+  x: CHART_CENTER_X - wS - wO - wR, y: barY, w: wR, h: barH,
+  fill: { color: "9E0B0F" },
+  line: { pt: 0, color: "9E0B0F" }   // ← color matches fill
+});
+if (wS > 0) slide2.addShape(pptx.ShapeType.rect, {
+  x: CHART_CENTER_X - wO - wS, y: barY, w: wS, h: barH,
+  fill: { color: "FF0000" },
+  line: { pt: 0, color: "FF0000" }
+});
+if (wO > 0) slide2.addShape(pptx.ShapeType.rect, {
+  x: CHART_CENTER_X - wO, y: barY, w: wO, h: barH,
+  fill: { color: "AD9380" },
+  line: { pt: 0, color: "AD9380" }
+});
+if (wA > 0) slide2.addShape(pptx.ShapeType.rect, {
+  x: CHART_CENTER_X, y: barY, w: wA, h: barH,
+  fill: { color: "008032" },
+  line: { pt: 0, color: "008032" }
+});
     }
   });
 
@@ -683,8 +714,7 @@ export function createSlideResultsDistribution(params: SlideParams) {
   });
 
   addFooterToSlide(slide2, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
-}
-export function createSlideInsufficientExposures(params: SlideParams) {
+}export function createSlideInsufficientExposures(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber, analytics } = params;
   const slide3 = pptx.addSlide();
   slide3.background = { color: "FFFFFF" };
@@ -799,7 +829,7 @@ slide3.addText("Count of Insufficient Exposure", {
   slide3.addShape(pptx.ShapeType.rect, {
     x: COL2_X - 0.003,
     y: HEADER_Y,
-    w: 0.006,
+    w: 0.001,
     h: HEADER_H + analytics.length * ROW_H,
     fill: { color: "666666" },
     line: { pt: 0 },
@@ -873,7 +903,6 @@ slide3.addText("Count of Insufficient Exposure", {
 
   addFooterToSlide(slide3, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
-
 export function createSlideSelfOther(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slide5 = pptx.addSlide();
@@ -882,20 +911,33 @@ export function createSlideSelfOther(params: SlideParams) {
 
   // ── TITLE & SUBTITLE ───────────────────────────────────────────────────────
   slide5.addText("Self / other", {
-    x: 0.38, y: 0.20, w: 8, h: 0.5,
+    x: 0.38, y: 0.18, w: 8, h: 0.52,
     fontFace: "Segoe UI Semibold", fontSize: 36, color: "111111", margin: 0,
   });
 
   slide5.addText("This page shows where your self-view differs from how colleagues experience your micro-behaviors.", {
-    x: 0.38, y: 0.75, w: 10, h: 0.3,
+    x: 0.38, y: 0.76, w: 10.5, h: 0.28,
     fontFace: "Segoe UI", fontSize: 11.5, color: "1B365D", margin: 0,
   });
 
   // ── CARD CONFIGURATION ─────────────────────────────────────────────────────
-  const cardW = 3.98;
-  const cardStartY = 1.40;
-  const cardGap = 0.30;
-  const startX = 0.39;
+  // Slide width = 13.33", cards fill ~96% of width
+  // 3 cards + 2 gaps + left/right margins
+  // startX=0.22, cardW=4.18, gap=0.18, rightEdge = 0.22 + 3*4.18 + 2*0.18 = 13.08 ✓
+  const cardW      = 4.18;
+  const cardStartY = 1.32;
+  const cardGap    = 0.18;
+  const startX     = 0.22;
+
+  // Header: tall enough for 2-line subheader ("Self-view and colleague feedback are similar")
+  const HEADER_H   = 1.05;
+  // Body: fills down to y≈5.90 (cards end just above "Additional detail" text at y≈6.10)
+  const BODY_H     = 3;
+  const RADIUS     = 0.08;
+  // Header fill: bright Ericsson blue
+  const HEADER_BG  = "1A6FD4";
+  // Body fill: very light grey
+  const BODY_BG    = "F2F2F5";
 
   const cards = [
     {
@@ -929,86 +971,78 @@ export function createSlideSelfOther(params: SlideParams) {
 
   cards.forEach((card, idx) => {
     const cardX = startX + idx * (cardW + cardGap);
-    const HEADER_H = 0.90;
-    const BODY_H = 3.75;
-    const RADIUS = 0.08;
 
-    // Header Background: rounded rectangle
+    // ── HEADER ──────────────────────────────────────────────────────────────
+    // Rounded rect for header
     slide5.addShape(pptx.ShapeType.roundRect, {
       x: cardX, y: cardStartY, w: cardW, h: HEADER_H,
       rectRadius: RADIUS,
-      fill: { color: "1D6FD8" }, line: { color: "1D6FD8", pt: 0 }
+      fill: { color: HEADER_BG }, line: { color: HEADER_BG, pt: 0 },
     });
-
-    // Flatten bottom corners of the header by overlaying a small flat rect
+    // Flatten bottom corners
     slide5.addShape(pptx.ShapeType.rect, {
-      x: cardX, y: cardStartY + HEADER_H - 0.12, w: cardW, h: 0.12,
-      fill: { color: "1D6FD8" }, line: { color: "1D6FD8", pt: 0 }
+      x: cardX, y: cardStartY + HEADER_H - 0.14, w: cardW, h: 0.14,
+      fill: { color: HEADER_BG }, line: { color: HEADER_BG, pt: 0 },
     });
 
-    // Header Text: Multi-weight
+    // Header text (bold title + regular subheader)
     slide5.addText(
       [
-        { text: card.header + "\n", options: { bold: true, fontSize: 13, color: "FFFFFF" } },
-        { text: card.subheader, options: { bold: false, fontSize: 10.5, color: "FFFFFF" } }
+        { text: card.header + "\n", options: { bold: true, fontSize: 18, color: "FFFFFF" } },
+        { text: card.subheader,     options: { bold: false, fontSize: 16, color: "FFFFFF" } },
       ],
       {
-        x: cardX + 0.20, y: cardStartY + 0.08, w: cardW - 0.40, h: HEADER_H - 0.16,
+        x: cardX + 0.18, y: cardStartY + 0.10,
+        w: cardW - 0.36, h: HEADER_H - 0.16,
         fontFace: "Segoe UI", valign: "middle", align: "left", margin: 0,
       }
     );
 
-    // Body Background: rounded rectangle
+    // ── BODY ────────────────────────────────────────────────────────────────
+    // Rounded rect for body
     slide5.addShape(pptx.ShapeType.roundRect, {
       x: cardX, y: cardStartY + HEADER_H, w: cardW, h: BODY_H,
       rectRadius: RADIUS,
-      fill: { color: "F4F4F6" }, line: { color: "F4F4F6", pt: 0 }
+      fill: { color: BODY_BG }, line: { color: BODY_BG, pt: 0 },
     });
-
-    // Flatten top corners of the body by overlaying a small flat rect
+    // Flatten top corners
     slide5.addShape(pptx.ShapeType.rect, {
-      x: cardX, y: cardStartY + HEADER_H, w: cardW, h: 0.12,
-      fill: { color: "F4F4F6" }, line: { color: "F4F4F6", pt: 0 }
+      x: cardX, y: cardStartY + HEADER_H, w: cardW, h: 0.14,
+      fill: { color: BODY_BG }, line: { color: BODY_BG, pt: 0 },
     });
 
-    // Bullets: Custom vibrant teal bullets with navy text
-    let bulletY = cardStartY + HEADER_H + 0.25;
-    const bulletSpacing = 0.90;
+    // ── BULLETS ─────────────────────────────────────────────────────────────
+    // Start bullets with comfortable top padding; each bullet h=0.72 with spacing
+    let bulletY      = cardStartY + HEADER_H + 0.28;
+    const bulletH    = 0.60;   // height per bullet box (accommodates 2-line wraps)
+    const bulletGap  = 0.10;   // extra gap between bullets
 
     card.bullets.forEach((bullet) => {
       slide5.addText(
         [
-          { text: "•  ", options: { color: "1B7F83", bold: true } },
-          { text: bullet, options: { color: "20354B" } }
+          { text: "•  ", options: { color: "1A6FAA", bold: true, fontSize: 11 } },
+          { text: bullet, options: { color: "1B2A3B", bold: false } },
         ],
         {
-          x: cardX + 0.20, y: bulletY,
-          w: cardW - 0.40, h: 0.70,
-          fontFace: "Segoe UI", fontSize: 10.5,
+          x: cardX + 0.18, y: bulletY,
+          w: cardW - 0.36, h: bulletH,
+          fontFace: "Segoe UI", fontSize: 16,
           margin: 0, valign: "top",
         }
       );
-      bulletY += bulletSpacing;
+      bulletY += bulletH + bulletGap;
     });
   });
 
-  // Footer text
+  // ── FOOTER NOTE ────────────────────────────────────────────────────────────
   slide5.addText("Additional detail in appendix", {
-    x: 0.38,
-    y: 6.25,
-    w: 3.5,
-    h: 0.20,
-    fontFace: "Segoe UI Semibold",
-    fontSize: 12,
-    color: "222222",
-    margin: 0,
-    bold: true,
+    x: 0.38, y: 6.22, w: 3.5, h: 0.22,
+    fontFace: "Segoe UI Semibold", fontSize: 12,
+    color: "222222", margin: 0, bold: true,
   });
 
   addFooterToSlide(slide5, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
-}
-
-export function createSlideQualitativeFeedback(params: SlideParams) {
+}export function createSlideQualitativeFeedback(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slide6 = pptx.addSlide();
   slide6.background = { color: "F3F3F3" };
@@ -1018,36 +1052,39 @@ export function createSlideQualitativeFeedback(params: SlideParams) {
   slide6.addText("Qualitative feedback", {
     x: 0.28,
     y: 0.18,
-    w: 5.5,
-    h: 0.45,
+    w: 7,
+    h: 0.55,
     fontFace: "Segoe UI Light",
-    bold:true,
-    fontSize: 29,
+    bold: false,
+    fontSize: 40,
     color: "111111",
     margin: 0,
-  
   });
 
   // SUBTITLE
   slide6.addText(
     "This page summarises key themes from the qualitative feedback your respondents provided.",
     {
-      x: 0.3,
+      x: 0.28,
       y: 0.82,
-      w: 7.8,
-      h: 0.2,
+      w: 9.5,
+      h: 0.22,
       fontFace: "Segoe UI",
-      fontSize: 10.5,
-      color: "20354B",
+      fontSize: 11,
+      color: "333333",
       margin: 0,
     }
   );
 
-  // LAYOUT
-  const qualCardW = 5.45;
-  const qualCardGap = 0.12;
+  // LAYOUT — two cards side by side, nearly full width
+  const totalW = 11.0;
   const qualStartX = 0.22;
-  const qualCardStartY = 1.25;
+  const qualCardGap = 0.18;
+  const qualCardW = (totalW - qualCardGap) / 2; // ~5.41 each
+  const qualCardStartY = 1.18;
+  const HEADER_H = 0.46;
+  const BODY_H = 4.72;
+  const TOTAL_CARD_H = HEADER_H + BODY_H;
 
   const qualCards = [
     {
@@ -1074,72 +1111,83 @@ export function createSlideQualitativeFeedback(params: SlideParams) {
     },
   ];
 
-  // CARDS
   qualCards.forEach((card, idx) => {
     const cardX = qualStartX + idx * (qualCardW + qualCardGap);
-    const HEADER_H = 0.42;
-    const BODY_H = 4.65;
 
-    // MAIN CARD
+    // CARD BODY (rounded rect for full card — gives rounded bottom corners)
     slide6.addShape(pptx.ShapeType.roundRect, {
       x: cardX,
       y: qualCardStartY,
       w: qualCardW,
-      h: BODY_H,
+      h: TOTAL_CARD_H,
       rectRadius: 0.12,
-      fill: { color: "E7E7ED" },
-      line: { color: "E7E7ED", pt: 0 },
+      fill: { color: "E8E8F0" },
+      line: { color: "E8E8F0", pt: 0 },
     });
 
-    // HEADER
+    // HEADER BACKGROUND — rounded top, flat bottom
+    // Use a roundRect clipped by placing a plain rect over the bottom half
+slide6.addShape(pptx.ShapeType.rect, {
+  x: cardX,
+  y: qualCardStartY,
+  w: qualCardW,
+  h: HEADER_H,
+  fill: { color: "1F73E8" },
+  line: { color: "1F73E8", pt: 0 },
+});
+    // Cover the bottom rounded corners of header with a plain rect
     slide6.addShape(pptx.ShapeType.rect, {
       x: cardX,
-      y: qualCardStartY,
+      y: qualCardStartY + HEADER_H - 0.01,
       w: qualCardW,
-      h: HEADER_H,
-      fill: { color: "1F73E8" },
-      line: { color: "1F73E8", pt: 0 },
+      h: 0.16,
+      fill: { color: "E8E8F0" },
+      line: { color: "E8E8F0", pt: 0 },
     });
 
-    // HEADER TEXT
+    // HEADER TEXT — italic style
     slide6.addText(card.header, {
-      x: cardX + 0.12,
-      y: qualCardStartY + 0.07,
-      w: qualCardW - 0.25,
-      h: 0.18,
+      x: cardX + 0.18,
+      y: qualCardStartY + 0.08,
+      w: qualCardW - 0.3,
+      h: HEADER_H - 0.1,
       fontFace: "Segoe UI",
-      fontSize: 13,
+      fontSize: 18,
+      bold: false,
+      italic: true,
       color: "FFFFFF",
+      valign: "middle",
       margin: 0,
     });
 
-    // DESCRIPTION
+    // DESCRIPTION TEXT
     slide6.addText(card.description, {
-      x: cardX + 0.16,
-      y: qualCardStartY + 0.58,
-      w: qualCardW - 0.35,
-      h: 0.55,
+      x: cardX + 0.2,
+      y: qualCardStartY + HEADER_H + 0.18,
+      w: qualCardW - 0.38,
+      h: 0.72,
       fontFace: "Segoe UI",
-      fontSize: 10,
-      color: "222222",
+      fontSize: 15,
+      color: "111111",
       breakLine: true,
       margin: 0,
       valign: "top",
     });
 
     // BULLETS
-    let bulletY = qualCardStartY + 1.55;
+    let bulletY = qualCardStartY + HEADER_H + 1.08;
 
     card.bullets.forEach((bullet) => {
       // Bullet dot
       slide6.addText("•", {
-        x: cardX + 0.15,
-        y: bulletY + 0.01,
-        w: 0.1,
-        h: 0.1,
+        x: cardX + 0.18,
+        y: bulletY,
+        w: 0.22,
+        h: 0.38,
         fontFace: "Segoe UI",
-        fontSize: 10,
+        fontSize: 15,
         color: "111111",
+        valign: "top",
         margin: 0,
       });
 
@@ -1147,98 +1195,219 @@ export function createSlideQualitativeFeedback(params: SlideParams) {
       slide6.addText(bullet, {
         x: cardX + 0.38,
         y: bulletY,
-        w: qualCardW - 0.65,
-        h: 0.48,
+        w: qualCardW - 0.60,
+        h: 0.60,
         fontFace: "Segoe UI",
-        fontSize: 10,
-        color: "222222",
+        fontSize: 15,
+        color: "111111",
         breakLine: true,
         margin: 0,
         valign: "top",
       });
 
-      bulletY += 0.72;
+      bulletY += 0.82;
     });
   });
 
-  // ADDITIONAL DETAIL
-  slide6.addText("Additional detail in appendix", {
-    x: 0.2,
-    y: 5.95,
-    w: 2.5,
-    h: 0.16,
+  // ADDITIONAL DETAIL — with bullet prefix
+  slide6.addText("• Additional detail in appendix", {
+    x: 0.22,
+    y: qualCardStartY + HEADER_H + BODY_H + 0.18,
+    w: 3.5,
+    h: 0.22,
     fontFace: "Segoe UI",
-    fontSize: 10,
-    color: "222222",
+    fontSize: 11,
+    color: "111111",
     margin: 0,
-    bold: true,
+    bold: false,
   });
 
   addFooterToSlide(slide6, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
-
 export function createSlideScoreCalc(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slideScoreCalc = pptx.addSlide();
-  slideScoreCalc.background = { color: "FFFFFF" };
+  slideScoreCalc.background = { color: "F2F2F2" };
   addLogoToSlide(slideScoreCalc, false);
 
   slideScoreCalc.addText("How the score is calculated", {
     x: 0.38, y: 0.2, w: 9, h: 0.6,
-    fontFace: "Segoe UI Semibold", fontSize: 32, color: "111111", margin: 0,
+    fontFace: "Segoe UI Semibold", fontSize: 32, color: "20354B", margin: 0,
   });
 
   slideScoreCalc.addText("From rater responses to a single percentage score, in three steps.", {
     x: 0.4, y: 0.75, w: 9, h: 0.3,
-    fontFace: "Segoe UI", fontSize: 12, color: "555555", margin: 0,
+    fontFace: "Segoe UI", fontSize: 12, color: "20354B", margin: 0,
   });
 
-  // THREE CARDS TOP
   const CARD_W = 4.1;
   const CARD_H = 3.5;
   const CARD_START_Y = 1.15;
   const CARD_HEADER_H = 0.55;
-  const CARD_GAP = 0.25;
-  const CARD_COLOR_HEADER = "2C8E8F"; // Teal
-  const CARD_COLOR_BG = "F2F4F7";
+  const CARD_GAP = 0.18;
+  const CARD_COLOR_HEADER = "2A979D";
+  const CARD_COLOR_BG = "E8E8EE";
 
   const calcSteps = [
-    {
-      title: "Step 1. Each response is weighted",
-      content: "Each rater chooses how often they see a behavior. Each choice carries a weight:\n\nAlways         →  100% of the time\nOften            →  75% of the time\nSometimes   →  50% of the time\nRarely           →  25% of the time"
-    },
-    {
-      title: "Step 2. Average across raters",
-      content: "For each behavior, take the mean of the assigned percentage values:\n\nscore   =   sum(v)  /  n\n\nv  =   percentage value\nn  =   raters who answered"
-    },
-    {
-      title: "Step 3. Apply the threshold band",
-      content: "Round the score to the nearest whole percentage, then place it in a band:\n\n> 85 %\nConsistently observed\n\n70 - 85 %\nModerately observed\n\n< 70 %\nInconsistently observed"
-    }
+    { title: "Step 1. Each response is weighted", content: "" },
+    { title: "Step 2. Average across raters",     content: "" },
+    { title: "Step 3. Apply the threshold band",  content: "" },
   ];
 
   calcSteps.forEach((step, idx) => {
     const x = 0.4 + idx * (CARD_W + CARD_GAP);
 
     // Header
-    slideScoreCalc.addShape(pptx.ShapeType.rect, {
+    slideScoreCalc.addShape(pptx.ShapeType.roundRect, {
       x, y: CARD_START_Y, w: CARD_W, h: CARD_HEADER_H,
-      fill: { color: CARD_COLOR_HEADER }
+      rectRadius: 0.06,
+      fill: { color: CARD_COLOR_HEADER },
+      line: { color: CARD_COLOR_HEADER, pt: 0 },
     });
     slideScoreCalc.addText(step.title, {
       x: x + 0.15, y: CARD_START_Y, w: CARD_W - 0.3, h: CARD_HEADER_H,
-      fontFace: "Segoe UI", fontSize: 12.5, bold: true, color: "FFFFFF", valign: "middle", margin: 0
+      fontFace: "Segoe UI", fontSize: 12.5, bold: true, color: "FFFFFF",
+      valign: "middle", margin: 0,
     });
 
-    // Body
-    slideScoreCalc.addShape(pptx.ShapeType.rect, {
+    // Body background
+    slideScoreCalc.addShape(pptx.ShapeType.roundRect, {
       x, y: CARD_START_Y + CARD_HEADER_H, w: CARD_W, h: CARD_H - CARD_HEADER_H,
-      fill: { color: CARD_COLOR_BG }
+      rectRadius: 0.06,
+      fill: { color: CARD_COLOR_BG },
+      line: { color: CARD_COLOR_BG, pt: 0 },
     });
-    slideScoreCalc.addText(step.content, {
-      x: x + 0.15, y: CARD_START_Y + CARD_HEADER_H + 0.2, w: CARD_W - 0.3, h: CARD_H - CARD_HEADER_H - 0.4,
-      fontFace: "Segoe UI", fontSize: 11, color: "333333", valign: "top", margin: 0, breakLine: true
-    });
+
+    const TEXT_X = x + 0.15;
+    const TEXT_Y = CARD_START_Y + CARD_HEADER_H + 0.2;
+    const TEXT_W = CARD_W - 0.3;
+    const TEXT_H = CARD_H - CARD_HEADER_H - 0.4;
+
+    // ── Step 1 ───────────────────────────────────────────────────────────────
+    if (idx === 0) {
+      // Intro line
+      slideScoreCalc.addText(
+        "Each rater chooses how often they see a behavior. Each choice carries a weight:",
+        {
+          x: TEXT_X, y: TEXT_Y, w: TEXT_W, h: 0.55,
+          fontFace: "Segoe UI", fontSize: 11, color: "333333",
+          valign: "top", margin: 0, breakLine: true,
+        }
+      );
+
+      // Weight rows — each on its own line so nothing wraps
+      const rows = [
+        { label: "Always",    pct: "100%", color: "008000" },
+        { label: "Often",     pct: "75%",  color: "D4AA2A" },
+        { label: "Sometimes", pct: "50%",  color: "FF0000" },
+        { label: "Rarely",    pct: "25%",  color: "C00000" },
+      ];
+
+      const ROW_START_Y = TEXT_Y + 0.62;
+      const ROW_H       = 0.28;
+      const ARROW_X     = TEXT_X + 1.05;   // fixed column for →
+      const PCT_X       = TEXT_X + 1.30;   // fixed column for "XX% of the time"
+
+      rows.forEach((row, i) => {
+        const ry = ROW_START_Y + i * ROW_H;
+
+        // Label (bold)
+        slideScoreCalc.addText(row.label, {
+          x: TEXT_X, y: ry, w: 1.0, h: ROW_H,
+          fontFace: "Segoe UI", fontSize: 11, bold: true, color: "333333",
+          valign: "middle", margin: 0,
+        });
+
+        // Arrow
+        slideScoreCalc.addText("→", {
+          x: ARROW_X, y: ry, w: 0.22, h: ROW_H,
+          fontFace: "Segoe UI", fontSize: 11, color: "333333",
+          valign: "middle", align: "center", margin: 0,
+        });
+
+        // Percentage text (colored + bold)
+        slideScoreCalc.addText(`${row.pct} of the time`, {
+          x: PCT_X, y: ry, w: TEXT_W - (PCT_X - TEXT_X), h: ROW_H,
+          fontFace: "Segoe UI", fontSize: 11, bold: true, color: row.color,
+          valign: "middle", margin: 0,
+        });
+      });
+    }
+
+    // ── Step 2 ───────────────────────────────────────────────────────────────
+    else if (idx === 1) {
+      // Intro
+      slideScoreCalc.addText(
+        "For each behavior, take the mean of the assigned percentage values:",
+        {
+          x: TEXT_X, y: TEXT_Y, w: TEXT_W, h: 0.55,
+          fontFace: "Segoe UI", fontSize: 11, color: "333333",
+          valign: "top", margin: 0, breakLine: true,
+        }
+      );
+
+      // Formula — bold, teal colored
+      slideScoreCalc.addText("score  =  sum(v)  /  n", {
+        x: TEXT_X, y: TEXT_Y + 0.65, w: TEXT_W, h: 0.38,
+        fontFace: "Segoe UI", fontSize: 13, bold: true, color: "102A6B",
+        valign: "middle", margin: 0,
+      });
+
+      // Legend
+      slideScoreCalc.addText(
+        [
+          { text: "v", options: { bold: true } },
+          { text: "  =  percentage value\n" },
+          { text: "n", options: { bold: true } },
+          { text: "  =  raters who answered" },
+        ],
+        {
+          x: TEXT_X, y: TEXT_Y + 1.1, w: TEXT_W, h: 0.6,
+          fontFace: "Segoe UI", fontSize: 11, color: "333333",
+          valign: "top", margin: 0, breakLine: true,
+        }
+      );
+    }
+
+    // ── Step 3 ───────────────────────────────────────────────────────────────
+    else {
+      // Intro
+      slideScoreCalc.addText(
+        "Round the score to the nearest whole percentage, then place it in a band:",
+        {
+          x: TEXT_X, y: TEXT_Y, w: TEXT_W, h: 0.55,
+          fontFace: "Segoe UI", fontSize: 11, color: "333333",
+          valign: "top", margin: 0, breakLine: true,
+        }
+      );
+
+      const bands = [
+        { range: "> 85 %",    label: "Consistently observed",   color: "008000" },
+        { range: "70 - 85 %", label: "Moderately observed",     color: "D4AA2A" },
+        { range: "< 70 %",    label: "Inconsistently observed", color: "FF0000" },
+      ];
+
+      const BAND_START_Y = TEXT_Y + 0.62;
+      const BAND_PAIR_H  = 0.52;
+
+      bands.forEach((band, i) => {
+        const by = BAND_START_Y + i * BAND_PAIR_H;
+
+        // Range (colored + bold)
+        slideScoreCalc.addText(band.range, {
+          x: TEXT_X, y: by, w: TEXT_W, h: 0.24,
+          fontFace: "Segoe UI", fontSize: 11, bold: true, color: band.color,
+          valign: "middle", margin: 0,
+        });
+
+        // Label
+        slideScoreCalc.addText(band.label, {
+          x: TEXT_X, y: by + 0.24, w: TEXT_W, h: 0.24,
+          fontFace: "Segoe UI", fontSize: 11, color: "333333",
+          valign: "middle", margin: 0,
+        });
+      });
+    }
   });
 
   // EXAMPLE PANEL AT BOTTOM
@@ -1246,42 +1415,78 @@ export function createSlideScoreCalc(params: SlideParams) {
   const EX_H = 1.9;
   slideScoreCalc.addShape(pptx.ShapeType.rect, {
     x: 0.4, y: EX_Y, w: 12.8, h: EX_H,
-    fill: { color: "FFFFFF" }, line: { color: "D9DEE5", pt: 1 }
+    fill: { color: "E8E8EE" }, line: { color: "C8CDD5", pt: 0.75 },
   });
   slideScoreCalc.addText("EXAMPLE", {
     x: 0.6, y: EX_Y + 0.15, w: 2, h: 0.2,
-    fontFace: "Segoe UI", fontSize: 10, bold: true, color: "1C2B4B"
+    fontFace: "Segoe UI", fontSize: 10, bold: true, color: "102A6B",
   });
-  slideScoreCalc.addText(
-    "Behavior: Makes timely decisions   •   n = 12 raters answered   •   illustrative\n\nCounts:  1 Rarely  ·  1 Sometimes  ·  5 Often  ·  5 Always\nScore  =  (1·25 + 1·50 + 5·75 + 5·100) / 12\n            =  (25 + 50 + 375 + 500) / 12  =  950 / 12   ≈   79.2 %\nRounded to 79 %",
+slideScoreCalc.addText(
+  [
     {
-      x: 0.6, y: EX_Y + 0.5, w: 9, h: 1.2,
-      fontFace: "Segoe UI", fontSize: 11, color: "333333", margin: 0
-    }
-  );
+      text: "Behavior: Makes timely decisions   •   n = 12 raters answered   •   illustrative\n\nCounts:  1 Rarely  ·  1 Sometimes  ·  5 Often  ·  5 Always\n",
+      options: {
+        color: "333333",
+      },
+    },
+    {
+      text: "Score  =  (1·25 + 1·50 + 5·75 + 5·100) / 12\n",
+      options: {
+        color: "102A6B",
+        bold: true,
+      },
+    },
+    {
+      text: "            =  (25 + 50 + 375 + 500) / 12  =  950 / 12   ≈   79.2 %\n",
+      options: {
+        color: "102A6B",
+        bold: true,
+      },
+    },
+    {
+      text: "Rounded to 79 %",
+      options: {
+        color: "333333",
+        italic: true,
+      },
+    },
+  ],
+  {
+    x: 0.6,
+    y: EX_Y + 0.5,
+    w: 9,
+    h: 1.2,
+    fontFace: "Segoe UI",
+    fontSize: 11,
+    margin: 0,
+    breakLine: true,
+  }
+);
 
-  // Score Badge in Example
+  // Score Badge
   slideScoreCalc.addShape(pptx.ShapeType.roundRect, {
     x: 9.8, y: EX_Y + 0.55, w: 2.8, h: 1.0,
-    fill: { color: "DAA520" }, rectRadius: 0.1
+    fill: { color: "D4AA2A" }, rectRadius: 0.1,
   });
   slideScoreCalc.addText("79 %", {
     x: 9.8, y: EX_Y + 0.6, w: 2.8, h: 0.5,
-    fontFace: "Segoe UI Semibold", fontSize: 24, color: "FFFFFF", align: "center", margin: 0
+    fontFace: "Segoe UI Semibold", fontSize: 24, color: "FFFFFF", align: "center", margin: 0,
   });
   slideScoreCalc.addText("Moderately observed", {
     x: 9.8, y: EX_Y + 1.1, w: 2.8, h: 0.2,
-    fontFace: "Segoe UI", fontSize: 9.5, color: "FFFFFF", align: "center", margin: 0
+    fontFace: "Segoe UI", fontSize: 9.5, color: "FFFFFF", align: "center", margin: 0,
   });
 
-  slideScoreCalc.addText("Note: Insufficient Exposure responses are excluded from n; they are never counted as zero. Scores are rounded to the nearest whole percent before bands are applied.", {
-    x: 0.4, y: 6.85, w: 12.8, h: 0.2,
-    fontFace: "Segoe UI", fontSize: 8.5, italic: true, color: "666666", margin: 0
-  });
+  slideScoreCalc.addText(
+    "Note: Insufficient Exposure responses are excluded from n; they are never counted as zero. Scores are rounded to the nearest whole percent before bands are applied.",
+    {
+      x: 0.4, y: 6.85, w: 12.8, h: 0.2,
+      fontFace: "Segoe UI", fontSize: 8.5, italic: true, color: "5A5A5A", margin: 0,
+    }
+  );
 
   addFooterToSlide(slideScoreCalc, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
 }
-
 export function createSlideFAQ(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slideFAQ = pptx.addSlide();
@@ -1571,7 +1776,7 @@ export function createSlidePDP(params: SlideParams) {
   addLogoToSlide(slide14, false);
 
   // TITLE
-  slide14.addText(`“${personalDevelopmentPlanData.title}”`, {
+  slide14.addText(`${personalDevelopmentPlanData.title}`, {
     x: 0.65,
     y: 0.22,
     w: 7.8,
@@ -1633,7 +1838,7 @@ export function createSlidePDP(params: SlideParams) {
       x: 0.5,
       y: 1.3,
       w: 7,
-      h: 0.15,
+      h: 0.17,
       fontFace: "Segoe UI",
       fontSize: 10,
       color: "FFFFFF",
@@ -1642,64 +1847,52 @@ export function createSlidePDP(params: SlideParams) {
   );
 
   // PROFESSIONAL GOALS TABLE
-  slide14.addTable(
+slide14.addTable(
+  [
     [
-      [
-        {
-          text: "Within your BU or Function",
-          options: { bold: true }
-        },
-        {
-          text: "Across the Organization",
-          options: { bold: true }
-        }
-      ],
-      [
-        {
-          text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}`
-        },
-        {
-          text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}`
-        }
-      ],
-      [
-        {
-          text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}`
-        },
-        {
-          text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}`
-        }
-      ],
-      [
-        {
-          text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}`
-        },
-        {
-          text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}`
-        }
-      ]
+      { text: "Within your BU or Function", options: { bold: true } },
+      { text: "Across the Organization", options: { bold: true } }
     ],
-    {
-      x: 0.42,
-      y: 1.55,
-      w: 11.2,
-      h: 1,
-      border: {
-        type: "solid",
-        pt: 1,
-        color: "8A8A8A"
-      },
-      fontFace: "Segoe UI",
-      fontSize: 10,
-      color: "333333",
-      fill: {
-        color: "F2F2F2"
-      },
-      margin: 0.08,
-      colW: [5.5, 5.7]
-    }
-  );
+    [
+      { text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}` },
+      { text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}` }
+    ],
+    [
+      { text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}` },
+      { text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}` }
+    ],
+    [
+      { text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}` },
+      { text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}` }
+    ]
+  ],
+{
+  x: 0.42,
+  y: 1.55,
+  w: 11.2,
+  h: 0.8,
+  border: { type: "none" },
+  fontFace: "Segoe UI",
+  fontSize: 10,
+  color: "333333",
+  fill: { color: "F2F2F2" },
+  margin: 0.02,
+  colW: [5.5, 5.7]
+}
+);
 
+// Outer border only
+slide14.addShape(pptx.ShapeType.rect, {
+  x: 0.42,
+  y: 1.55,
+  w: 11.2,
+  h: 1.15, // adjust based on actual table height
+  fill: { transparency: 100 },
+  line: {
+    color: "8A8A8A",
+    pt: 1
+  }
+});
   // BEHAVIOR DEVELOPMENT HEADER
   slide14.addShape(pptx.ShapeType.rect, {
     x: 0.42,
@@ -2032,11 +2225,17 @@ export function createSlideVerbatimThemes(params: SlideParams) {
   });
 
   // CARDS
-addThemeCard(pptx, slide15, verbatimThemesData.themes[0], 0.35, 1.2);
-addThemeCard(pptx, slide15, verbatimThemesData.themes[1], 6.18, 1.2);
+const CARD_W = 5.3;
+const CARD_GAP = 0.45;
 
-addThemeCard(pptx, slide15, verbatimThemesData.themes[2], 0.35, 3.65);
-addThemeCard(pptx, slide15, verbatimThemesData.themes[3], 6.18, 3.65);
+const TOTAL_W = CARD_W * 2 + CARD_GAP;
+const START_X = (13.33 - TOTAL_W) / 2;
+
+addThemeCard(pptx, slide15, verbatimThemesData.themes[0], START_X, 1.2);
+addThemeCard(pptx, slide15, verbatimThemesData.themes[1], START_X + CARD_W + CARD_GAP, 1.2);
+
+addThemeCard(pptx, slide15, verbatimThemesData.themes[2], START_X, 3.65);
+addThemeCard(pptx, slide15, verbatimThemesData.themes[3], START_X + CARD_W + CARD_GAP, 3.65);
   // FOOTNOTE
   slide15.addText(verbatimThemesData.footerNote, {
     x: 2.25,
