@@ -120,15 +120,15 @@ export const personalDevelopmentPlanData = {
     headers: [
       {
         text: "Behavior",
-        options: { bold: true }
+        options: { italic: true }
       },
       {
         text: "Success Definition",
-        options: { bold: true }
+        options: { italic: true }
       },
       {
         text: "Measurable Outcomes",
-        options: { bold: true }
+        options: { italic: true }
       }
     ],
 
