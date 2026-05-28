@@ -118,6 +118,32 @@ interface SlideParams {
   diagramBase64?: string;
 }
 
+const HEADER_FONT_FACE = "Hilde Header Light";
+const BODY_FONT_FACE = "Hilda Body";
+
+function isHeaderText(text: any, options?: any) {
+  if (options?.bold) return true;
+  if (Array.isArray(text)) {
+    return text.some((run: any) => run?.options?.bold);
+  }
+  return false;
+}
+
+function withBrandFont(text: any, options?: any) {
+  const resolvedOptions = options ? { ...options } : {};
+  resolvedOptions.fontFace = isHeaderText(text, resolvedOptions)
+    ? HEADER_FONT_FACE
+    : BODY_FONT_FACE;
+  return resolvedOptions;
+}
+
+function applyBrandFontsToSlide(slide: any) {
+  const originalAddText = slide.addText.bind(slide);
+  slide.addText = (text: any, options?: any) =>
+    originalAddText(text, withBrandFont(text, options));
+  return slide;
+}
+
 //////////////////////////////////////////////////////
 // MODULAR SLIDE CREATION FUNCTIONS
 //////////////////////////////////////////////////////
@@ -249,7 +275,7 @@ export function createSlideHowCreated(params: SlideParams) {
   });
   slideHowCreated.addText(
     "You nominated colleagues across manager, peer, direct report and broader stakeholder groups to give a balanced view of your leadership.\n\nEach rater assessed you against the micro-behaviors on the right. Micro-behaviors are deliberately observable and specific interpretations of the leadership framework.",
-    { x: 0.5, y: 2.3, w: 2.8, h: 3.5, fontFace: "Segoe UI", fontSize: 11, color: "FFFFFF", valign: "top", breakLine: true, margin: 0 }
+    { x: 0.5, y: 2.3, w: 2.8, h: 3.5, fontFace: "Segoe UI", fontSize: 12, color: "FFFFFF", valign: "top", breakLine: true, margin: 0 }
   );
 
   // VERTICAL DIVIDER LINE WITH CHEVRON GAP
@@ -312,7 +338,7 @@ export function createSlideHowCreated(params: SlideParams) {
   leftBehaviors.forEach((behavior) => {
     slideHowCreated.addText(behavior, {
       x: 4.3, y: behaviorY, w: 3.8, h: 0.35,
-      fontFace: "Segoe UI", fontSize: 10.5, color: "82B7E8",
+      fontFace: "Segoe UI", fontSize: 12, color: "82B7E8",
       valign: "top", breakLine: true, margin: 0,
     });
     behaviorY += lineSpacing;
@@ -546,7 +572,7 @@ export function createSlideResultsDistribution(params: SlideParams) {
 
   slide2.addText("Results distribution", {
     x: 0.38, y: 0.15, w: 6, h: 0.5,
-    fontFace: "Segoe UI", fontSize: 32, color: "111111", margin: 0,
+    fontFace: "Segoe UI", fontSize: 40, color: "111111", margin: 0,
   });
 
   // Blue Notification Box - Centered above Distribution column
@@ -631,7 +657,7 @@ export function createSlideResultsDistribution(params: SlideParams) {
     }
     slide2.addText(h.text, {
       x: h.x, y: TABLE_Y, w: h.w, h: HEADER_H,
-      fontFace: "Segoe UI", fontSize: h.text === "Sometimes" ? 8 : 9, bold: h.bold || false, color: h.color,
+      fontFace: "Segoe UI", fontSize: h.text === "Sometimes" ? 11 : 11, bold: h.bold || false, color: h.color,
       align: (h.align || "center") as any, valign: "middle", margin: h.align === "left" ? 0.1 : 0
     });
   });
@@ -658,7 +684,7 @@ export function createSlideResultsDistribution(params: SlideParams) {
     // Content
     slide2.addText(item.question, {
       x: COL_X[0] + 0.1, y: y, w: COL_W[0] - 0.2, h: ROW_H,
-      fontFace: "Segoe UI", fontSize: 8.0, color: "111111", align: "left", valign: "middle", margin: 0,
+      fontFace: "Segoe UI", fontSize: 11, color: "111111", align: "left", valign: "middle", margin: 0,
       fit: "shrink"
     });
 
@@ -667,7 +693,7 @@ export function createSlideResultsDistribution(params: SlideParams) {
     counts.forEach((c, cIdx) => {
       slide2.addText(c.toString(), {
         x: COL_X[2 + cIdx], y: y, w: COL_W[2 + cIdx], h: ROW_H,
-        fontFace: "Segoe UI", fontSize: 9, color: "111111", align: "center", valign: "middle", margin: 0
+        fontFace: "Segoe UI", fontSize: 11, color: "111111", align: "center", valign: "middle", margin: 0
       });
     });
 
@@ -724,7 +750,7 @@ export function createSlideInsufficientExposures(params: SlideParams) {
 
   slide3.addText("Insufficient Exposures", {
     x: 0.25, y: 0.08, w: 8.0, h: 0.55,
-    fontFace: "Segoe UI", fontSize: 28, color: "1A1A1A", bold: false, margin: 0,
+    fontFace: "Segoe UI", fontSize: 40, color: "1A1A1A", bold: false, margin: 0,
   });
 
   const TABLE_LEFT = 0.25;
@@ -757,7 +783,7 @@ export function createSlideInsufficientExposures(params: SlideParams) {
   // Header text col 1
   slide3.addText("Results", {
     x: TABLE_LEFT + 0.06, y: HEADER_Y, w: COL1_W, h: HEADER_H,
-    fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "111111",
+    fontFace: "Segoe UI", fontSize: 11, bold: true, color: "111111",
     margin: 0, valign: "middle", align: "left",
   });
 
@@ -768,7 +794,7 @@ export function createSlideInsufficientExposures(params: SlideParams) {
     w: COL2_W - 0.08,
     h: HEADER_H,
     fontFace: "Segoe UI",
-    fontSize: 8.5,
+    fontSize: 11,
     bold: true,
     color: "111111",
     margin: 0,
@@ -783,14 +809,14 @@ export function createSlideInsufficientExposures(params: SlideParams) {
     // Question label
     slide3.addText(item.question, {
       x: TABLE_LEFT + 0.06, y: rowY + 0.01, w: COL1_W - 0.08, h: ROW_H - 0.02,
-      fontFace: "Segoe UI", fontSize: 7.8, color: "222222",
+      fontFace: "Segoe UI", fontSize: 11, color: "222222",
       margin: 0, valign: "middle", fit: "shrink",
     });
 
     if (count === 0) {
       slide3.addText("0", {
         x: COL2_X + 0.08, y: rowY + 0.01, w: 0.5, h: ROW_H - 0.02,
-        fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
+        fontFace: "Segoe UI", fontSize: 11, color: "333333",
         margin: 0, valign: "middle", align: "left",
       });
     } else {
@@ -807,7 +833,7 @@ export function createSlideInsufficientExposures(params: SlideParams) {
 
       slide3.addText(`${count}`, {
         x: BAR_X + barW + 0.07, y: rowY + 0.01, w: 0.4, h: ROW_H - 0.02,
-        fontFace: "Segoe UI", fontSize: 7.8, color: "333333",
+        fontFace: "Segoe UI", fontSize: 11, color: "333333",
         margin: 0, valign: "middle", align: "left",
       });
     }
@@ -914,7 +940,7 @@ export function createSlideInsufficientExposures(params: SlideParams) {
       w: NOTE_W - 0.18,
       h: NOTE_BODY_H - 0.14,
       fontFace: "Segoe UI",
-      fontSize: 8.3,
+      fontSize: 11,
       color: "333333",
       margin: 0,
       breakLine: true,
@@ -1811,7 +1837,7 @@ export function createSlidePDP(params: SlideParams) {
     w: 8.2,
     h: 0.55,
     fontFace: "Segoe UI",
-    fontSize: 30,
+    fontSize: 40,
     color: "222222",
     margin: 0,
   });
@@ -2524,16 +2550,9 @@ export function createSlideResultsAtGlance(params: SlideParams) {
   const PART_BOX_H = TOTAL_ROW_H;
 
   // ── TITLE & SUBTITLE ───────────────────────────────────────────────────────
-  // Title part 1: "Your results "
-  slide17.addText("Your results ", {
-    x: 0.38, y: 0.20, w: 2.6, h: 0.6,
-    fontFace: "Segoe UI", fontSize: 36,
-    color: "222222", bold: false, margin: 0,
-  });
-
-  // Title part 2: "at a glance"
-  slide17.addText("at a glance", {
-    x: 2.98, y: 0.20, w: 2.5, h: 0.6,
+  // Single title box prevents unintended text wrapping/duplication.
+  slide17.addText("Your results at a glance", {
+    x: 0.38, y: 0.20, w: 5.8, h: 0.6,
     fontFace: "Segoe UI", fontSize: 36,
     color: "222222", bold: false, margin: 0,
   });
@@ -2643,12 +2662,12 @@ export function createSlideResultsAtGlance(params: SlideParams) {
 
     slide17.addText(label, {
       x: INFO_LABEL_X, y: infoY, w: INFO_LABEL_W, h: rowH,
-      fontFace: "Segoe UI", fontSize: 9.5,
+      fontFace: "Segoe UI", fontSize: 12,
       color: "333333", breakLine: true, valign: "middle", margin: 0,
     });
     slide17.addText(value, {
       x: INFO_VALUE_X, y: infoY, w: INFO_VALUE_W, h: rowH,
-      fontFace: "Segoe UI", fontSize: 10,
+      fontFace: "Segoe UI", fontSize: 12,
       bold: true, color: "111111", valign: "middle", margin: 0,
     });
 
@@ -2663,16 +2682,20 @@ export function createSlideResultsAtGlance(params: SlideParams) {
 
   // Horizontal line separating info rows from confidentiality text
   const DIVIDER_Y = PART_BOX_Y + 1.60;
+  const CONF_TEXT_Y = DIVIDER_Y + 0.18;
+  const CONF_TEXT_H = 1.35;
+  const PARA_GAP = 0.22;
+  const ANON_TEXT_Y = CONF_TEXT_Y + CONF_TEXT_H + PARA_GAP;
 
   slide17.addText(resultsAtGlanceData.participantInfo.confidentialityText, {
-    x: INFO_LABEL_X, y: DIVIDER_Y + 0.18, w: PART_W - 0.20, h: 1.35,
-    fontFace: "Segoe UI", fontSize: 7.8, color: "666666",
+    x: INFO_LABEL_X, y: CONF_TEXT_Y, w: PART_W - 0.20, h: CONF_TEXT_H,
+    fontFace: "Segoe UI", fontSize: 10, color: "666666",
     breakLine: true, margin: 0, valign: "top",
   });
 
   slide17.addText(resultsAtGlanceData.participantInfo.anonymityText, {
-    x: INFO_LABEL_X, y: DIVIDER_Y + 1.65, w: PART_W - 0.20, h: 1.35,
-    fontFace: "Segoe UI", fontSize: 7.8, color: "666666",
+    x: INFO_LABEL_X, y: ANON_TEXT_Y, w: PART_W - 0.20, h: 1.35,
+    fontFace: "Segoe UI", fontSize: 10, color: "666666",
     breakLine: true, margin: 0, valign: "top",
   });
 
@@ -2709,7 +2732,7 @@ export function createSlideResultsAtGlance(params: SlideParams) {
       slide17.addText(combinedAction, {
         x: X_ACT + 0.12, y: currentY + 0.12,
         w: ACT_W - 0.24, h: mergedH - 0.24,
-        fontFace: "Segoe UI", fontSize: 9.5,
+        fontFace: "Segoe UI", fontSize: 12,
         color: "333333", breakLine: true, valign: "top", margin: 0,
       });
     } else if (index < 2) {
@@ -2722,7 +2745,7 @@ export function createSlideResultsAtGlance(params: SlideParams) {
       slide17.addText(section.action, {
         x: X_ACT + 0.12, y: currentY + 0.12,
         w: ACT_W - 0.24, h: rowH - 0.24,
-        fontFace: "Segoe UI", fontSize: 9.5,
+        fontFace: "Segoe UI", fontSize: 12,
         color: "333333", breakLine: true, valign: "top", margin: 0,
       });
     }
@@ -2731,7 +2754,7 @@ export function createSlideResultsAtGlance(params: SlideParams) {
     slide17.addText(section.title, {
       x: X_FEED + 0.12, y: currentY + 0.12,
       w: SEC_W - 0.24, h: rowH - 0.24,
-      fontFace: "Segoe UI", fontSize: 10.5, bold: true,
+      fontFace: "Segoe UI", fontSize: 12, bold: true,
       color: "20354B", breakLine: true, valign: "top", margin: 0,
     });
 
@@ -2747,7 +2770,7 @@ export function createSlideResultsAtGlance(params: SlideParams) {
         {
           x: X_BULL + 0.12, y: bulletY,
           w: BULL_W - 0.24, h: 0.28,
-          fontFace: "Segoe UI", fontSize: 10,
+          fontFace: "Segoe UI", fontSize: 12,
           margin: 0, valign: "top",
         }
       );
@@ -2950,6 +2973,9 @@ export async function GET(req: NextRequest) {
   pptx.author = "Antigravity";
   pptx.subject = "360 Feedback";
   pptx.company = "360 Feedback Report";
+  const originalAddSlide = pptx.addSlide.bind(pptx);
+  pptx.addSlide = (...args: any[]) =>
+    applyBrandFontsToSlide((originalAddSlide as any)(...args));
 
   // Diagram Base64
   const diagramPath = path.join(process.cwd(), "public", "360_diagram.png");
