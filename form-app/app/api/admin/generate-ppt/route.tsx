@@ -498,19 +498,19 @@ export function createSlideOverallResults(params: SlideParams) {
       fit: "shrink", margin: 0, breakLine: false,
     });
 
-slide1.addShape(pptx.ShapeType.rect, {
-  x: barX,
-  y: currentY - 0.01,
+    slide1.addShape(pptx.ShapeType.rect, {
+      x: barX,
+      y: currentY - 0.01,
 
-  w: 0.008,
-  h: 0.42,
+      w: 0.008,
+      h: 0.42,
 
-  fill: { color: "9E9E9E" },
-  line: {
-    color: "9E9E9E",
-    pt: 0,
-  },
-});
+      fill: { color: "9E9E9E" },
+      line: {
+        color: "9E9E9E",
+        pt: 0,
+      },
+    });
     const BAR_MAX_W = 1.15;
     const barFillW = (item.rawAverage / 100) * BAR_MAX_W;
 
@@ -578,52 +578,52 @@ export function createSlideResultsDistribution(params: SlideParams) {
 
   slide2.addShape(pptx.ShapeType.rect, { x: COL_X[0], y: TABLE_Y, w: COL_W[0] + COL_W[1], h: HEADER_H, fill: { color: "E7E7E7" } });
 
-const headers = [
-  {
-    text: "Results",
-    x: COL_X[0],
-    w: COL_W[0],
-    align: "left",
-    color: "111111",
-    bold: true
-  },
-  {
-    text: "Distribution",
-    x: COL_X[1],
-    w: COL_W[1],
-    align: "center",
-    color: "111111",
-    bold: true
-  },
-  {
-    text: "Rarely",
-    x: COL_X[2],
-    w: COL_W[2],
-    bg: "D00000",      // darker red
-    color: "FFFFFF"
-  },
-  {
-    text: "Sometimes",
-    x: COL_X[3],
-    w: COL_W[3],
-    bg: "FF2B2B",      // brighter red
-    color: "FFFFFF"
-  },
-  {
-    text: "Often",
-    x: COL_X[4],
-    w: COL_W[4],
-    bg: "B9AC96",      // warm beige/grey
-    color: "FFFFFF"
-  },
-  {
-    text: "Always",
-    x: COL_X[5],
-    w: COL_W[5],
-    bg: "008A00",      // Ericsson-style green
-    color: "FFFFFF"
-  }
-];
+  const headers = [
+    {
+      text: "Results",
+      x: COL_X[0],
+      w: COL_W[0],
+      align: "left",
+      color: "111111",
+      bold: true
+    },
+    {
+      text: "Distribution",
+      x: COL_X[1],
+      w: COL_W[1],
+      align: "center",
+      color: "111111",
+      bold: true
+    },
+    {
+      text: "Rarely",
+      x: COL_X[2],
+      w: COL_W[2],
+      bg: "D00000",      // darker red
+      color: "FFFFFF"
+    },
+    {
+      text: "Sometimes",
+      x: COL_X[3],
+      w: COL_W[3],
+      bg: "FF2B2B",      // brighter red
+      color: "FFFFFF"
+    },
+    {
+      text: "Often",
+      x: COL_X[4],
+      w: COL_W[4],
+      bg: "B9AC96",      // warm beige/grey
+      color: "FFFFFF"
+    },
+    {
+      text: "Always",
+      x: COL_X[5],
+      w: COL_W[5],
+      bg: "008A00",      // Ericsson-style green
+      color: "FFFFFF"
+    }
+  ];
 
   headers.forEach(h => {
     if (h.bg) {
@@ -684,26 +684,26 @@ const headers = [
 
       const barY = y + (ROW_H * 0.2);
       const barH = ROW_H * 0.6;
-if (wR > 0) slide2.addShape(pptx.ShapeType.rect, {
-  x: CHART_CENTER_X - wS - wO - wR, y: barY, w: wR, h: barH,
-  fill: { color: "9E0B0F" },
-  line: { pt: 0, color: "9E0B0F" }   // ← color matches fill
-});
-if (wS > 0) slide2.addShape(pptx.ShapeType.rect, {
-  x: CHART_CENTER_X - wO - wS, y: barY, w: wS, h: barH,
-  fill: { color: "FF0000" },
-  line: { pt: 0, color: "FF0000" }
-});
-if (wO > 0) slide2.addShape(pptx.ShapeType.rect, {
-  x: CHART_CENTER_X - wO, y: barY, w: wO, h: barH,
-  fill: { color: "AD9380" },
-  line: { pt: 0, color: "AD9380" }
-});
-if (wA > 0) slide2.addShape(pptx.ShapeType.rect, {
-  x: CHART_CENTER_X, y: barY, w: wA, h: barH,
-  fill: { color: "008032" },
-  line: { pt: 0, color: "008032" }
-});
+      if (wR > 0) slide2.addShape(pptx.ShapeType.rect, {
+        x: CHART_CENTER_X - wS - wO - wR, y: barY, w: wR, h: barH,
+        fill: { color: "9E0B0F" },
+        line: { pt: 0, color: "9E0B0F" }   // ← color matches fill
+      });
+      if (wS > 0) slide2.addShape(pptx.ShapeType.rect, {
+        x: CHART_CENTER_X - wO - wS, y: barY, w: wS, h: barH,
+        fill: { color: "FF0000" },
+        line: { pt: 0, color: "FF0000" }
+      });
+      if (wO > 0) slide2.addShape(pptx.ShapeType.rect, {
+        x: CHART_CENTER_X - wO, y: barY, w: wO, h: barH,
+        fill: { color: "AD9380" },
+        line: { pt: 0, color: "AD9380" }
+      });
+      if (wA > 0) slide2.addShape(pptx.ShapeType.rect, {
+        x: CHART_CENTER_X, y: barY, w: wA, h: barH,
+        fill: { color: "008032" },
+        line: { pt: 0, color: "008032" }
+      });
     }
   });
 
@@ -745,14 +745,14 @@ export function createSlideInsufficientExposures(params: SlideParams) {
     : 0.255;
 
   // Header row background
-slide3.addShape(pptx.ShapeType.rect, {
-  x: TABLE_LEFT,
-  y: HEADER_Y,
-  w: TABLE_W,
-  h: HEADER_H,
-  fill: { color: "D0D0D0" },
-  line: { color: "D0D0D0", pt: 0 },  // ← change pt from 0.75 to 0
-});
+  slide3.addShape(pptx.ShapeType.rect, {
+    x: TABLE_LEFT,
+    y: HEADER_Y,
+    w: TABLE_W,
+    h: HEADER_H,
+    fill: { color: "D0D0D0" },
+    line: { color: "D0D0D0", pt: 0 },  // ← change pt from 0.75 to 0
+  });
 
   // Header text col 1
   slide3.addText("Results", {
@@ -762,19 +762,19 @@ slide3.addShape(pptx.ShapeType.rect, {
   });
 
   // Header text col 2
-slide3.addText("Count of Insufficient Exposure", {
-  x: COL2_X + 0.08,
-  y: HEADER_Y,
-  w: COL2_W - 0.08,
-  h: HEADER_H,
-  fontFace: "Segoe UI",
-  fontSize: 8.5,
-  bold: true,
-  color: "111111",
-  margin: 0,
-  valign: "middle",
-  align: "left",
-});
+  slide3.addText("Count of Insufficient Exposure", {
+    x: COL2_X + 0.08,
+    y: HEADER_Y,
+    w: COL2_W - 0.08,
+    h: HEADER_H,
+    fontFace: "Segoe UI",
+    fontSize: 8.5,
+    bold: true,
+    color: "111111",
+    margin: 0,
+    valign: "middle",
+    align: "left",
+  });
 
   // ── Data rows ─────────────────────────────────────────────────────────────
   analytics.forEach((item, idx) => {
@@ -946,20 +946,20 @@ export function createSlideSelfOther(params: SlideParams) {
   // Slide width = 13.33", cards fill ~96% of width
   // 3 cards + 2 gaps + left/right margins
   // startX=0.22, cardW=4.18, gap=0.18, rightEdge = 0.22 + 3*4.18 + 2*0.18 = 13.08 ✓
-  const cardW      = 4.18;
+  const cardW = 4.18;
   const cardStartY = 1.32;
-  const cardGap    = 0.18;
-  const startX     = 0.22;
+  const cardGap = 0.18;
+  const startX = 0.22;
 
   // Header: tall enough for 2-line subheader ("Self-view and colleague feedback are similar")
-  const HEADER_H   = 1.05;
+  const HEADER_H = 1.05;
   // Body: fills down to y≈5.90 (cards end just above "Additional detail" text at y≈6.10)
-  const BODY_H     = 3;
-  const RADIUS     = 0.08;
+  const BODY_H = 3;
+  const RADIUS = 0.08;
   // Header fill: bright Ericsson blue
-  const HEADER_BG  = "1A6FD4";
+  const HEADER_BG = "1A6FD4";
   // Body fill: very light grey
-  const BODY_BG    = "F2F2F5";
+  const BODY_BG = "F2F2F5";
 
   const cards = [
     {
@@ -1011,7 +1011,7 @@ export function createSlideSelfOther(params: SlideParams) {
     slide5.addText(
       [
         { text: card.header + "\n", options: { bold: true, fontSize: 18, color: "FFFFFF" } },
-        { text: card.subheader,     options: { bold: false, fontSize: 16, color: "FFFFFF" } },
+        { text: card.subheader, options: { bold: false, fontSize: 16, color: "FFFFFF" } },
       ],
       {
         x: cardX + 0.18, y: cardStartY + 0.10,
@@ -1035,9 +1035,9 @@ export function createSlideSelfOther(params: SlideParams) {
 
     // ── BULLETS ─────────────────────────────────────────────────────────────
     // Start bullets with comfortable top padding; each bullet h=0.72 with spacing
-    let bulletY      = cardStartY + HEADER_H + 0.28;
-    const bulletH    = 0.60;   // height per bullet box (accommodates 2-line wraps)
-    const bulletGap  = 0.10;   // extra gap between bullets
+    let bulletY = cardStartY + HEADER_H + 0.28;
+    const bulletH = 0.60;   // height per bullet box (accommodates 2-line wraps)
+    const bulletGap = 0.10;   // extra gap between bullets
 
     card.bullets.forEach((bullet) => {
       slide5.addText(
@@ -1064,7 +1064,7 @@ export function createSlideSelfOther(params: SlideParams) {
   });
 
   addFooterToSlide(slide5, pptx, participantName, footerDate, pageNumber, 10.80, 7.10, 2.30, 0.28);
-}export function createSlideQualitativeFeedback(params: SlideParams) {
+} export function createSlideQualitativeFeedback(params: SlideParams) {
   const { pptx, participantName, footerDate, pageNumber } = params;
   const slide6 = pptx.addSlide();
   slide6.background = { color: "F3F3F3" };
@@ -1149,14 +1149,14 @@ export function createSlideSelfOther(params: SlideParams) {
 
     // HEADER BACKGROUND — rounded top, flat bottom
     // Use a roundRect clipped by placing a plain rect over the bottom half
-slide6.addShape(pptx.ShapeType.rect, {
-  x: cardX,
-  y: qualCardStartY,
-  w: qualCardW,
-  h: HEADER_H,
-  fill: { color: "1F73E8" },
-  line: { color: "1F73E8", pt: 0 },
-});
+    slide6.addShape(pptx.ShapeType.rect, {
+      x: cardX,
+      y: qualCardStartY,
+      w: qualCardW,
+      h: HEADER_H,
+      fill: { color: "1F73E8" },
+      line: { color: "1F73E8", pt: 0 },
+    });
     // Cover the bottom rounded corners of header with a plain rect
     slide6.addShape(pptx.ShapeType.rect, {
       x: cardX,
@@ -1272,8 +1272,8 @@ export function createSlideScoreCalc(params: SlideParams) {
 
   const calcSteps = [
     { title: "Step 1. Each response is weighted", content: "" },
-    { title: "Step 2. Average across raters",     content: "" },
-    { title: "Step 3. Apply the threshold band",  content: "" },
+    { title: "Step 2. Average across raters", content: "" },
+    { title: "Step 3. Apply the threshold band", content: "" },
   ];
 
   calcSteps.forEach((step, idx) => {
@@ -1319,16 +1319,16 @@ export function createSlideScoreCalc(params: SlideParams) {
 
       // Weight rows — each on its own line so nothing wraps
       const rows = [
-        { label: "Always",    pct: "100%", color: "008000" },
-        { label: "Often",     pct: "75%",  color: "D4AA2A" },
-        { label: "Sometimes", pct: "50%",  color: "FF0000" },
-        { label: "Rarely",    pct: "25%",  color: "C00000" },
+        { label: "Always", pct: "100%", color: "008000" },
+        { label: "Often", pct: "75%", color: "D4AA2A" },
+        { label: "Sometimes", pct: "50%", color: "FF0000" },
+        { label: "Rarely", pct: "25%", color: "C00000" },
       ];
 
       const ROW_START_Y = TEXT_Y + 0.62;
-      const ROW_H       = 0.28;
-      const ARROW_X     = TEXT_X + 1.05;   // fixed column for →
-      const PCT_X       = TEXT_X + 1.30;   // fixed column for "XX% of the time"
+      const ROW_H = 0.28;
+      const ARROW_X = TEXT_X + 1.05;   // fixed column for →
+      const PCT_X = TEXT_X + 1.30;   // fixed column for "XX% of the time"
 
       rows.forEach((row, i) => {
         const ry = ROW_START_Y + i * ROW_H;
@@ -1404,13 +1404,13 @@ export function createSlideScoreCalc(params: SlideParams) {
       );
 
       const bands = [
-        { range: "> 85 %",    label: "Consistently observed",   color: "008000" },
-        { range: "70 - 85 %", label: "Moderately observed",     color: "D4AA2A" },
-        { range: "< 70 %",    label: "Inconsistently observed", color: "FF0000" },
+        { range: "> 85 %", label: "Consistently observed", color: "008000" },
+        { range: "70 - 85 %", label: "Moderately observed", color: "D4AA2A" },
+        { range: "< 70 %", label: "Inconsistently observed", color: "FF0000" },
       ];
 
       const BAND_START_Y = TEXT_Y + 0.62;
-      const BAND_PAIR_H  = 0.52;
+      const BAND_PAIR_H = 0.52;
 
       bands.forEach((band, i) => {
         const by = BAND_START_Y + i * BAND_PAIR_H;
@@ -1443,47 +1443,47 @@ export function createSlideScoreCalc(params: SlideParams) {
     x: 0.6, y: EX_Y + 0.15, w: 2, h: 0.2,
     fontFace: "Segoe UI", fontSize: 10, bold: true, color: "102A6B",
   });
-slideScoreCalc.addText(
-  [
-    {
-      text: "Behavior: Makes timely decisions   •   n = 12 raters answered   •   illustrative\n\nCounts:  1 Rarely  ·  1 Sometimes  ·  5 Often  ·  5 Always\n",
-      options: {
-        color: "333333",
+  slideScoreCalc.addText(
+    [
+      {
+        text: "Behavior: Makes timely decisions   •   n = 12 raters answered   •   illustrative\n\nCounts:  1 Rarely  ·  1 Sometimes  ·  5 Often  ·  5 Always\n",
+        options: {
+          color: "333333",
+        },
       },
-    },
-    {
-      text: "Score  =  (1·25 + 1·50 + 5·75 + 5·100) / 12\n",
-      options: {
-        color: "102A6B",
-        bold: true,
+      {
+        text: "Score  =  (1·25 + 1·50 + 5·75 + 5·100) / 12\n",
+        options: {
+          color: "102A6B",
+          bold: true,
+        },
       },
-    },
-    {
-      text: "            =  (25 + 50 + 375 + 500) / 12  =  950 / 12   ≈   79.2 %\n",
-      options: {
-        color: "102A6B",
-        bold: true,
+      {
+        text: "            =  (25 + 50 + 375 + 500) / 12  =  950 / 12   ≈   79.2 %\n",
+        options: {
+          color: "102A6B",
+          bold: true,
+        },
       },
-    },
-    {
-      text: "Rounded to 79 %",
-      options: {
-        color: "333333",
-        italic: true,
+      {
+        text: "Rounded to 79 %",
+        options: {
+          color: "333333",
+          italic: true,
+        },
       },
-    },
-  ],
-  {
-    x: 0.6,
-    y: EX_Y + 0.5,
-    w: 9,
-    h: 1.2,
-    fontFace: "Segoe UI",
-    fontSize: 11,
-    margin: 0,
-    breakLine: true,
-  }
-);
+    ],
+    {
+      x: 0.6,
+      y: EX_Y + 0.5,
+      w: 9,
+      h: 1.2,
+      fontFace: "Segoe UI",
+      fontSize: 11,
+      margin: 0,
+      breakLine: true,
+    }
+  );
 
   // Score Badge
   slideScoreCalc.addShape(pptx.ShapeType.roundRect, {
@@ -1665,19 +1665,19 @@ export function createSlidePositiveImpact(params: SlideParams) {
   slide12.background = { color: "F2F2F2" };
   addLogoToSlide(slide12, false);
 
-// TITLE
-slide12.addText(`"${positiveImpactData.title}"`, {
-  x: 0.4,
-  y: 0.1,
-  w: 8.5,
-  h: 1.3,
-  fontFace: "Segoe UI",
-  fontSize: 30,
-  color: "222222",
-  margin: 0,
-  valign: "middle",
-  breakLine: true,
-});
+  // TITLE
+  slide12.addText(`"${positiveImpactData.title}"`, {
+    x: 0.4,
+    y: 0.1,
+    w: 8.5,
+    h: 1.3,
+    fontFace: "Segoe UI",
+    fontSize: 30,
+    color: "222222",
+    margin: 0,
+    valign: "middle",
+    breakLine: true,
+  });
 
   // SECTION TAG
   slide12.addShape(pptx.ShapeType.roundRect, {
@@ -1798,6 +1798,12 @@ export function createSlidePDP(params: SlideParams) {
   slide14.background = { color: "FFFFFF" };
   addLogoToSlide(slide14, false);
 
+  // Center all PDP tables and section bars on a wide slide.
+  const pdpTableW = 11.2;
+  const slideWideW = 13.333;
+  // Snap to a 2-decimal grid to avoid tiny shape/table render drift.
+  const pdpCenterX = Number(((slideWideW - pdpTableW) / 2).toFixed(2));
+
   // TITLE
   slide14.addText(personalDevelopmentPlanData.title, {
     x: 0.25,
@@ -1836,9 +1842,9 @@ export function createSlidePDP(params: SlideParams) {
 
   // PROFESSIONAL GOALS HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 0.11,
+    x: pdpCenterX,
     y: 1.25,
-    w: 11.2,
+    w: pdpTableW,
     h: 0.3,
     fill: { color: "102B46" },
     line: { color: "102B46" },
@@ -1857,7 +1863,7 @@ export function createSlidePDP(params: SlideParams) {
       }
     ],
     {
-      x: 0.2,
+      x: pdpCenterX + 0.09,
       y: 1.3,
       w: 7,
       h: 0.17,
@@ -1869,95 +1875,95 @@ export function createSlidePDP(params: SlideParams) {
   );
 
   // PROFESSIONAL GOALS TABLE
-const noBorder = { type: "none" as const };
-const solidBorder = { type: "solid" as const, pt: 1, color: "8A8A8A" };
+  const noBorder = { type: "none" as const };
+  const solidBorder = { type: "solid" as const, pt: 1, color: "8A8A8A" };
 
-slide14.addTable(
-  [
-    // Header row
-// Header row
-[
-  {
-    text: "Within your BU or Function",
-    options: {
-      bold: true,
-      border: [solidBorder, noBorder, noBorder, solidBorder], // bottom → noBorder
-    },
-  },
-  {
-    text: "Across the Organization",
-    options: {
-      bold: true,
-      border: [solidBorder, solidBorder, noBorder, solidBorder], // bottom → noBorder
-    },
-  },
-],
-    // Row 1
+  slide14.addTable(
     [
-      {
-        text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}`,
-        options: {
-          border: [noBorder, noBorder, noBorder, solidBorder],
+      // Header row
+      // Header row
+      [
+        {
+          text: "Within your BU or Function",
+          options: {
+            bold: true,
+            border: [solidBorder, noBorder, noBorder, solidBorder], // bottom → noBorder
+          },
         },
-      },
-      {
-        text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}`,
-        options: {
-          border: [noBorder, solidBorder, noBorder, solidBorder],
+        {
+          text: "Across the Organization",
+          options: {
+            bold: true,
+            border: [solidBorder, solidBorder, noBorder, solidBorder], // bottom → noBorder
+          },
         },
-      },
+      ],
+      // Row 1
+      [
+        {
+          text: `1. ${personalDevelopmentPlanData.professionalGoals.withinBU[0].text}`,
+          options: {
+            border: [noBorder, noBorder, noBorder, solidBorder],
+          },
+        },
+        {
+          text: `1. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[0].text}`,
+          options: {
+            border: [noBorder, solidBorder, noBorder, solidBorder],
+          },
+        },
+      ],
+      // Row 2
+      [
+        {
+          text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}`,
+          options: {
+            border: [noBorder, noBorder, noBorder, solidBorder],
+          },
+        },
+        {
+          text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}`,
+          options: {
+            border: [noBorder, solidBorder, noBorder, solidBorder],
+          },
+        },
+      ],
+      // Row 3 (last — close bottom border)
+      [
+        {
+          text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}`,
+          options: {
+            border: [noBorder, noBorder, solidBorder, solidBorder],
+          },
+        },
+        {
+          text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}`,
+          options: {
+            border: [noBorder, solidBorder, solidBorder, solidBorder],
+          },
+        },
+      ],
     ],
-    // Row 2
-    [
-      {
-        text: `2. ${personalDevelopmentPlanData.professionalGoals.withinBU[1].text}`,
-        options: {
-          border: [noBorder, noBorder, noBorder, solidBorder],
-        },
-      },
-      {
-        text: `2. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[1].text}`,
-        options: {
-          border: [noBorder, solidBorder, noBorder, solidBorder],
-        },
-      },
-    ],
-    // Row 3 (last — close bottom border)
-    [
-      {
-        text: `3. ${personalDevelopmentPlanData.professionalGoals.withinBU[2].text}`,
-        options: {
-          border: [noBorder, noBorder, solidBorder, solidBorder],
-        },
-      },
-      {
-        text: `3. ${personalDevelopmentPlanData.professionalGoals.acrossOrganization[2].text}`,
-        options: {
-          border: [noBorder, solidBorder, solidBorder, solidBorder],
-        },
-      },
-    ],
-  ],
-  {
+    {
 
-  x: 0.12,
-  y: 1.55,
-  w: 11.2,
-  h: 0.85,      // increase from 0.65 to give all 4 rows room
-  fontFace: "Segoe UI",
-  fontSize: 10,
-  color: "333333",
-  fill: { color: "FFFFFF" },
-  margin: 0.03,
-  colW: [5.5, 5.7],
-}
-  
-);
+      x: pdpCenterX,
+      y: 1.55,
+      w: pdpTableW,
+      h: 0.85,      // increase from 0.65 to give all 4 rows room
+      fontFace: "Segoe UI",
+      fontSize: 10,
+      color: "333333",
+      fill: { color: "FFFFFF" },
+      margin: 0.03,
+      colW: [5.5, 5.7],
+    }
+
+  );
   // BEHAVIOR DEVELOPMENT HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 0.11,
+    x: pdpCenterX,
     y: 2.55,
-    w: 11.2,
+    w: pdpTableW,
     h: 0.3,
     fill: { color: "102B46" },
     line: { color: "102B46" },
@@ -1976,7 +1982,7 @@ slide14.addTable(
       }
     ],
     {
-      x: 0.2,
+      x: pdpCenterX + 0.09,
       y: 2.6,
       w: 9,
       h: 0.15,
@@ -1994,9 +2000,9 @@ slide14.addTable(
       ...personalDevelopmentPlanData.behaviorDevelopment.rows
     ],
     {
-      x: 0.12,
+      x: pdpCenterX,
       y: 2.85,
-      w: 11.2,
+      w: pdpTableW,
       h: 1.3,
       border: {
         type: "solid",
@@ -2016,7 +2022,7 @@ slide14.addTable(
 
   // ACTION PLAN HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 0.11,
+    x: pdpCenterX,
     y: 4.55,
     w: 5.6,
     h: 0.3,
@@ -2037,7 +2043,7 @@ slide14.addTable(
       }
     ],
     {
-      x: 0.2,
+      x: pdpCenterX + 0.09,
       y: 4.6,
       w: 5.2,
       h: 0.15,
@@ -2050,7 +2056,7 @@ slide14.addTable(
 
   // STAKEHOLDER HEADER
   slide14.addShape(pptx.ShapeType.rect, {
-    x: 5.71,
+    x: pdpCenterX + 5.6,
     y: 4.55,
     w: 5.6,
     h: 0.3,
@@ -2071,7 +2077,7 @@ slide14.addTable(
       }
     ],
     {
-      x: 5.82,
+      x: pdpCenterX + 5.71,
       y: 4.6,
       w: 5.1,
       h: 0.15,
@@ -2091,9 +2097,9 @@ slide14.addTable(
       ]
     ],
     {
-      x: 0.12,
+      x: pdpCenterX,
       y: 4.85,
-      w: 11.2,
+      w: pdpTableW,
       h: 0.5,
       border: {
         type: "solid",
@@ -2285,17 +2291,17 @@ export function createSlideVerbatimThemes(params: SlideParams) {
   });
 
   // CARDS
-const CARD_W = 5.3;
-const CARD_GAP = 0.45;
+  const CARD_W = 5.3;
+  const CARD_GAP = 0.45;
 
-const TOTAL_W = CARD_W * 2 + CARD_GAP;
-const START_X = (13.33 - TOTAL_W) / 2;
+  const TOTAL_W = CARD_W * 2 + CARD_GAP;
+  const START_X = (13.33 - TOTAL_W) / 2;
 
-addThemeCard(pptx, slide15, verbatimThemesData.themes[0], START_X, 1.2);
-addThemeCard(pptx, slide15, verbatimThemesData.themes[1], START_X + CARD_W + CARD_GAP, 1.2);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[0], START_X, 1.2);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[1], START_X + CARD_W + CARD_GAP, 1.2);
 
-addThemeCard(pptx, slide15, verbatimThemesData.themes[2], START_X, 3.65);
-addThemeCard(pptx, slide15, verbatimThemesData.themes[3], START_X + CARD_W + CARD_GAP, 3.65);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[2], START_X, 3.65);
+  addThemeCard(pptx, slide15, verbatimThemesData.themes[3], START_X + CARD_W + CARD_GAP, 3.65);
   // FOOTNOTE
   slide15.addText(verbatimThemesData.footerNote, {
     x: 2.25,
@@ -2494,28 +2500,28 @@ export function createSlideResultsAtGlance(params: SlideParams) {
   addLogoToSlide(slide17, false);
 
   // ── Layout constants ───────────────────────────────────────────────────────
-  const TABLE_X     = 0.38;
-  const TABLE_Y     = 1.45;
-  const HEADER_H    = 0.35;
-  const TEAL        = "1B7F83"; // Premium corporate teal
-  const BORDER      = "BFDCDC";
-  const BORDER_PT   = 0.75;
+  const TABLE_X = 0.38;
+  const TABLE_Y = 1.45;
+  const HEADER_H = 0.35;
+  const TEAL = "1B7F83"; // Premium corporate teal
+  const BORDER = "BFDCDC";
+  const BORDER_PT = 0.75;
 
-  const PART_W      = 2.60;
-  const SEC_W       = 2.30;
-  const BULL_W      = 4.40;
-  const ACT_W       = 3.10;
+  const PART_W = 2.60;
+  const SEC_W = 2.30;
+  const BULL_W = 4.40;
+  const ACT_W = 3.10;
 
-  const X_PART      = TABLE_X;           // 0.38
-  const X_FEED      = X_PART + PART_W + 0.18; // 3.16 (spacing gap of 0.18)
-  const X_BULL      = X_FEED + SEC_W;    // 5.46
-  const X_ACT       = X_BULL + BULL_W;   // 9.86
-  const PART_BOX_Y  = TABLE_Y + HEADER_H; // 1.80
+  const X_PART = TABLE_X;           // 0.38
+  const X_FEED = X_PART + PART_W + 0.18; // 3.16 (spacing gap of 0.18)
+  const X_BULL = X_FEED + SEC_W;    // 5.46
+  const X_ACT = X_BULL + BULL_W;   // 9.86
+  const PART_BOX_Y = TABLE_Y + HEADER_H; // 1.80
 
   // Row heights: sized to make it extremely spacious and elegant
-  const rowHeights  = [1.15, 1.15, 1.20, 1.30];
+  const rowHeights = [1.15, 1.15, 1.20, 1.30];
   const TOTAL_ROW_H = rowHeights.reduce((a, b) => a + b, 0); // 4.80
-  const PART_BOX_H  = TOTAL_ROW_H;
+  const PART_BOX_H = TOTAL_ROW_H;
 
   // ── TITLE & SUBTITLE ───────────────────────────────────────────────────────
   // Title part 1: "Your results "
@@ -2597,11 +2603,11 @@ export function createSlideResultsAtGlance(params: SlideParams) {
     x: X_ACT + 0.12, y: TABLE_Y, w: ACT_W - 0.24, h: HEADER_H,
     fontFace: "Segoe UI", fontSize: 11, bold: true,
     color: "FFFFFF", valign: "middle", margin: 0,
-  }); 
+  });
 
   // ── PARTICIPANT INFO CARD ──────────────────────────────────────────────────
   // Outer Border Box
-   slide17.addShape(pptx.ShapeType.rect, {
+  slide17.addShape(pptx.ShapeType.rect, {
     x: X_PART, y: PART_BOX_Y, w: PART_W, h: PART_BOX_H,
     fill: { color: "FFFFFF" },
     line: { color: "FFFFFF", pt: 0 },  // ✅ no border
@@ -2612,17 +2618,17 @@ export function createSlideResultsAtGlance(params: SlideParams) {
     fill: { color: "F4F4F6" }, line: { color: "F4F4F6" },
   });
 
-  
-  const INFO_LABEL_X  = X_PART + 0.10;
-  const INFO_VALUE_X  = X_PART + 1.12;
-  const INFO_LABEL_W  = 0.85;
-  const INFO_VALUE_W  = 1.35;
-  const INFO_DIV_X    = X_PART + 1.00;
+
+  const INFO_LABEL_X = X_PART + 0.10;
+  const INFO_VALUE_X = X_PART + 1.12;
+  const INFO_LABEL_W = 0.85;
+  const INFO_VALUE_W = 1.35;
+  const INFO_DIV_X = X_PART + 1.00;
 
   const infoRows = [
-    { label: "Name",               value: resultsAtGlanceData.participantInfo.name,            rowH: 0.45 },
-    { label: "Reporting\nperiod",  value: resultsAtGlanceData.participantInfo.reportingPeriod,  rowH: 0.55 },
-    { label: "Response\nrate",     value: resultsAtGlanceData.participantInfo.responseRate,     rowH: 0.50 },
+    { label: "Name", value: resultsAtGlanceData.participantInfo.name, rowH: 0.45 },
+    { label: "Reporting\nperiod", value: resultsAtGlanceData.participantInfo.reportingPeriod, rowH: 0.55 },
+    { label: "Response\nrate", value: resultsAtGlanceData.participantInfo.responseRate, rowH: 0.50 },
   ];
 
   let infoY = PART_BOX_Y + 0.05;
