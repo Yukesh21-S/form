@@ -575,13 +575,13 @@ export function createSlideResultsDistribution(params: SlideParams) {
     fontFace: "Segoe UI", fontSize: 40, color: "111111", margin: 0,
   });
 
-  // Blue Notification Box - Centered above Distribution column
+  // Blue notification box - keep clear of title area in PDF exports
   slide2.addShape(pptx.ShapeType.rect, {
-    x: 4.8, y: 0.15, w: 2.5, h: 0.35,
+    x: 7.35, y: 0.10, w: 2.5, h: 0.35,
     fill: { color: "1E56DB" }
   });
   slide2.addText("Micro-behaviors not yet finalized", {
-    x: 4.8, y: 0.15, w: 2.5, h: 0.35,
+    x: 7.35, y: 0.10, w: 2.5, h: 0.35,
     fontFace: "Segoe UI", fontSize: 8.5, bold: true, color: "FFFFFF",
     align: "center", valign: "middle", margin: 0,
   });

@@ -121,6 +121,19 @@ export default function ParticipantsPage() {
                 Generate PPT
               </button>
 
+              {/* GENERATE PDF */}
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded text-sm"
+                onClick={() => {
+                  window.open(
+                    `/api/admin/generate-pdf?formId=${formId}&participantId=${participant.id}`,
+                    "_blank"
+                  );
+                }}
+              >
+                Generate PDF
+              </button>
+
             </div>
 
           </div>
